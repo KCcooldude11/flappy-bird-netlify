@@ -3,6 +3,19 @@
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
 
+  // --- Assets ---
+  // Background image (load once)
+  const bg = new Image();
+  bg.src = './assets/Untitled_Artwork.png'; // change if you rename it
+  let bgReady = false;
+  bg.onload = () => { bgReady = true; };
+
+  // Bird images
+  const birdIdle = new Image();
+  birdIdle.src = './assets/Apple_Regular.png';
+  const birdFlap = new Image();
+  birdFlap.src = './assets/Apple_Fly.png';
+
   // DPI scaling for crispness
   const DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
   function resizeCanvas() {
@@ -18,24 +31,18 @@
   // Game constants
   const W = () => (canvas.clientWidth || canvas.width / DPR);
   const H = () => (canvas.clientHeight || canvas.height / DPR);
-  const GRAVITY = 1400;      // px/s^2
-  const JUMP_VY = -420;      // px/s
-  const PIPE_SPEED = 160;    // px/s
-  const PIPE_GAP = 140;      // px
-  const PIPE_INTERVAL = 1500;// ms
-  const PIPE_WIDTH = 70;     // px
-  const FLOOR_HEIGHT = 90;
-
-  // Bird images
-  const birdIdle = new Image();
-  birdIdle.src = './assets/Apple_Regular.png';
-  const birdFlap = new Image();
-  birdFlap.src = './assets/Apple_Fly.png';
+  const GRAVITY = 1400;       // px/s^2
+  const JUMP_VY = -420;       // px/s
+  const PIPE_SPEED = 160;     // px/s
+  const PIPE_GAP = 140;       // px
+  const PIPE_INTERVAL = 1500; // ms
+  const PIPE_WIDTH = 70;      // px
+  const FLOOR_HEIGHT = 90;    // logical floor for collisions (we won't draw it)
 
   // State
   let state = 'ready'; // ready | playing | gameover
   let bird = {
-    x: 120, y: 200, vy: 0, r: 18, rot: 0,
+    x: 120, y: 200, vy: 0, r: 60, rot: 0, // r upscaled for 230x230 draw
     flapTimer: 0, // ms remaining to show flap image
   };
   let pipes = [];
@@ -52,12 +59,11 @@
   const btnRestart = document.getElementById('btn-restart');
   const scoreEl = document.getElementById('score');
   const bestEl = document.getElementById('best');
-
   bestEl.textContent = 'Best: ' + best;
 
   function resetGame() {
     bird.x = 120;
-    bird.y = H()/2 - 50;
+    bird.y = H()/2 - 80;
     bird.vy = 0;
     bird.rot = 0;
     bird.flapTimer = 0;
@@ -90,7 +96,7 @@
     if (state === 'ready') start();
     if (state !== 'playing') return;
     bird.vy = JUMP_VY;
-    bird.flapTimer = 750; // show flap image for 140ms
+    bird.flapTimer = 750; // show flap image for 750ms
   }
 
   // Inputs
@@ -133,12 +139,7 @@
     });
   }
 
-  function rectsOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
-    return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
-  }
-
   function circleRectOverlap(cx, cy, cr, rx, ry, rw, rh) {
-    // clamp
     const nx = Math.max(rx, Math.min(cx, rx + rw));
     const ny = Math.max(ry, Math.min(cy, ry + rh));
     const dx = cx - nx;
@@ -152,7 +153,7 @@
     // Bird physics
     bird.vy += GRAVITY * dt;
     bird.y += bird.vy * dt;
-    bird.rot = Math.atan2(bird.vy, 300);
+    bird.rot = Math.atan2(bird.vy, 300); // velocity-based lean
 
     if (bird.flapTimer > 0) bird.flapTimer -= dt*1000;
 
@@ -167,14 +168,12 @@
     for (let p of pipes) {
       p.x -= PIPE_SPEED * dt;
     }
-    // Remove off-screen pipes
     while (pipes.length && pipes[0].x + PIPE_WIDTH < -40) {
       pipes.shift();
     }
 
     // Collision + scoring
     const floorY = H() - FLOOR_HEIGHT;
-    const birdBox = { x: bird.x - bird.r, y: bird.y - bird.r, w: bird.r*2, h: bird.r*2 };
 
     if (bird.y + bird.r >= floorY || bird.y - bird.r <= 0) {
       return gameOver();
@@ -199,47 +198,45 @@
 
   function draw() {
     const w = W(), h = H();
-    // Sky
-    const bg = new Image();
-bg.src = './assets/background.png';
-ctx.drawImage(bg, 0, 0, w, h);
 
-    // Background hills
-    ctx.fillStyle = '#74c465';
-    ctx.fillRect(0, h - FLOOR_HEIGHT - 40, w, 20);
-    ctx.fillStyle = '#6ab05c';
-    ctx.fillRect(0, h - FLOOR_HEIGHT - 20, w, 20);
+    // --- Background (cover, no distortion) ---
+    if (bgReady) {
+      const scale = Math.max(w / bg.width, h / bg.height);
+      const dw = bg.width * scale;
+      const dh = bg.height * scale;
+      const dx = (w - dw) / 2;
+      const dy = (h - dh) / 2;
+      ctx.drawImage(bg, dx, dy, dw, dh);
+    } else {
+      // Fallback gradient until image loads
+      const skyGrad = ctx.createLinearGradient(0,0,0,h);
+      skyGrad.addColorStop(0, '#8fd0ff');
+      skyGrad.addColorStop(1, '#bfe8ff');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0,0,w,h);
+    }
 
     // Pipes
     for (let p of pipes) {
       ctx.fillStyle = '#2fbf71';
-      // top pipe
       ctx.fillRect(p.x, 0, PIPE_WIDTH, p.topH);
-      // lip
-      ctx.fillRect(p.x - 4, p.topH - 14, PIPE_WIDTH + 8, 14);
-      // bottom pipe
+      ctx.fillRect(p.x - 4, p.topH - 14, PIPE_WIDTH + 8, 14); // top lip
       const bottomH = h - p.gapY - FLOOR_HEIGHT;
       ctx.fillRect(p.x, p.gapY, PIPE_WIDTH, bottomH);
-      // lip
-      ctx.fillRect(p.x - 4, p.gapY, PIPE_WIDTH + 8, 14);
+      ctx.fillRect(p.x - 4, p.gapY, PIPE_WIDTH + 8, 14); // bottom lip
     }
 
     // Bird
     ctx.save();
     ctx.translate(bird.x, bird.y);
-    ctx.rotate(bird.rot * 0.6);
+    ctx.rotate(bird.rot * 0.45); // a bit less nose-down for big sprite
     const img = (bird.flapTimer > 0) ? birdFlap : birdIdle;
-    const bw = 230, bh = 230; // draw size
+    const bw = 230, bh = 230; // your requested draw size
     ctx.drawImage(img, -bw/2, -bh/2, bw, bh);
     ctx.restore();
 
-    // Floor
-    ctx.fillStyle = '#d9bf8f';
-    ctx.fillRect(0, h - FLOOR_HEIGHT, w, FLOOR_HEIGHT);
-    ctx.fillStyle = '#c7ac7c';
-    for (let x = 0; x < w; x += 24) {
-      ctx.fillRect(x, h - FLOOR_HEIGHT, 16, 8);
-    }
+    // (Optional) Don't draw a floor so your art remains visible
+    // If you want a visible ground, re-add the floor rectangles here.
 
     if (state === 'ready') {
       overlay.classList.add('show');
