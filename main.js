@@ -231,7 +231,7 @@
     ctx.translate(bird.x, bird.y);
     ctx.rotate(bird.rot * 0.45); // a bit less nose-down for big sprite
     const img = (bird.flapTimer > 0) ? birdFlap : birdIdle;
-    const bw = 100, bh = 100; // your requested draw size
+    const bw = 30, bh = 130; // your requested draw size
     ctx.drawImage(img, -bw/2, -bh/2, bw, bh);
     ctx.restore();
 
