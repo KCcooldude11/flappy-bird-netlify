@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flappy — Netlify Ready</title>
+    <link rel="preload" href="./assets/bird_idle.png" as="image">
+    <link rel="preload" href="./assets/bird_flap.png" as="image">
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game" width="480" height="640" role="img" aria-label="Flappy Bird style game"></canvas>
+      <div id="hud">
+        <div class="left">
+          <button id="btn-restart" aria-label="Restart" title="Restart">↻</button>
+        </div>
+        <div class="center">
+          <span id="score">0</span>
+        </div>
+        <div class="right">
+          <span id="best">Best: 0</span>
+        </div>
+      </div>
+      <div id="overlay" class="show">
+        <h1>FLAPPY</h1>
+        <p>Press <kbd>Space</kbd> / tap to flap</p>
+        <p class="small">Replace the bird images in <code>/assets</code> with your own.</p>
+        <button id="btn-play">Play</button>
+      </div>
+      <div id="gameover" class="hide">
+        <h2>Game Over</h2>
+        <p><button id="btn-try">Try Again</button></p>
+      </div>
+    </div>
+    <script src="./main.js"></script>
+  </body>
+</html>
