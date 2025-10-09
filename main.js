@@ -231,7 +231,7 @@
     ctx.translate(bird.x, bird.y);
     ctx.rotate(bird.rot * 0.6);
     const img = (bird.flapTimer > 0) ? birdFlap : birdIdle;
-    const bw = 288, bh = 216; // draw size
+    const bw = 230, bh = 230; // draw size
     ctx.drawImage(img, -bw/2, -bh/2, bw, bh);
     ctx.restore();
 
