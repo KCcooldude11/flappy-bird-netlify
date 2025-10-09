@@ -90,7 +90,7 @@
     if (state === 'ready') start();
     if (state !== 'playing') return;
     bird.vy = JUMP_VY;
-    bird.flapTimer = 140; // show flap image for 140ms
+    bird.flapTimer = 500; // show flap image for 140ms
   }
 
   // Inputs
@@ -231,7 +231,7 @@
     ctx.translate(bird.x, bird.y);
     ctx.rotate(bird.rot * 0.6);
     const img = (bird.flapTimer > 0) ? birdFlap : birdIdle;
-    const bw = 48, bh = 36; // draw size
+    const bw = 96, bh = 72; // draw size
     ctx.drawImage(img, -bw/2, -bh/2, bw, bh);
     ctx.restore();
 
