@@ -28,9 +28,9 @@
 
   // Bird images
   const birdIdle = new Image();
-  birdIdle.src = './assets/bird_idle.png';
+  birdIdle.src = './assets/Apple_Regular.png';
   const birdFlap = new Image();
-  birdFlap.src = './assets/bird_flap.png';
+  birdFlap.src = './assets/Apple_Fly.png';
 
   // State
   let state = 'ready'; // ready | playing | gameover
