@@ -200,11 +200,9 @@
   function draw() {
     const w = W(), h = H();
     // Sky
-    const skyGrad = ctx.createLinearGradient(0,0,0,h);
-    skyGrad.addColorStop(0, '#8fd0ff');
-    skyGrad.addColorStop(1, '#bfe8ff');
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0,0,w,h);
+    const bg = new Image();
+bg.src = './assets/background.png';
+ctx.drawImage(bg, 0, 0, w, h);
 
     // Background hills
     ctx.fillStyle = '#74c465';
