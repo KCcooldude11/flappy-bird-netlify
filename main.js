@@ -95,7 +95,7 @@
     if (state === 'ready') start();
     if (state !== 'playing') return;
     bird.vy = JUMP_VY;
-    bird.flapTimer = 400; // show flap image for 750ms
+    bird.flapTimer = 600; // show flap image for 750ms
   }
 
   // Inputs
