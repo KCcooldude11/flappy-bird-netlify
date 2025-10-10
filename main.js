@@ -10,6 +10,91 @@
   let bgReady = false;
   bg.onload = () => { bgReady = true; };
 
+// --- Rock-spike rendering helpers (sandstone look) ---
+const SAND_LIGHT  = '#e9ddc8';
+const SAND_MID    = '#d8c7a8';
+const SAND_SHADOW = '#cbb895';
+
+// Tiny seeded RNG so each column keeps its shape frame-to-frame
+function makeRNG(seed) {
+  let s = Math.floor(seed * 1e9) % 2147483647;
+  if (s <= 0) s += 2147483646;
+  return () => (s = (s * 48271) % 2147483647) / 2147483647;
+}
+
+// Build a jagged edge polygon along the “gap” side
+function buildJaggedEdge(xStart, yStart, length, inward, teethCount, rng) {
+  // returns an array of points [ {x,y}, ... ] from top→bottom (or bottom→top)
+  const pts = [];
+  const step = length / teethCount;
+  for (let i = 0; i <= teethCount; i++) {
+    const y = yStart + step * i;
+    // varied tooth depth (2px–10px)
+    const depth = inward * (4 + 6 * rng());
+    // Alternate long/short for a more natural look
+    const d = (i % 2 === 0) ? depth : depth * 0.45;
+    pts.push({ x: xStart + d, y });
+  }
+  return pts;
+}
+
+function drawSandstoneColumn(x, y, w, h, towardGap, rng) {
+  // Base block (slightly rounded)
+  const r = 8;
+  ctx.fillStyle = SAND_MID;
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y,     x + w, y + r, r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.arcTo(x,     y + h, x,     y + h - r, r);
+  ctx.arcTo(x,     y,     x + r, y, r);
+  ctx.closePath();
+  ctx.fill();
+
+  // Light face overlay
+  const grad = ctx.createLinearGradient(x, y, x, y + h);
+  grad.addColorStop(0, SAND_LIGHT);
+  grad.addColorStop(1, SAND_MID);
+  ctx.fillStyle = grad;
+  ctx.fillRect(x + 2, y + 2, w - 6, h - 6);
+
+  // Jagged inner edge (toward the gap)
+  const edgeX = towardGap === 'down' ? x : x; // using left edge as anchor
+  const innerDir = (towardGap === 'down') ? 1 : 1; // positive = into gap
+  const teeth = Math.max(6, Math.floor(h / 26));
+  const pts = buildJaggedEdge(edgeX, y, h, innerDir * (w * 0.35), teeth, rng);
+
+  ctx.beginPath();
+  // Outer vertical edge (right side)
+  ctx.moveTo(x + w, y);
+  ctx.lineTo(x + w, y + h);
+  // bottom edge back to start of jagged
+  ctx.lineTo(x, y + h);
+  // jagged up along inner edge
+  for (let i = pts.length - 1; i >= 0; i--) {
+    const p = pts[i];
+    ctx.lineTo(p.x, p.y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = SAND_SHADOW;
+  ctx.globalAlpha = 0.6;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+// Draw both top and bottom “spike” columns
+function drawRockColumns(x, topH, gapY, w, h, floorH, seed) {
+  const rng = makeRNG(seed);
+
+  // Top column (points downward into gap)
+  drawSandstoneColumn(x, 0, w, topH, 'down', rng);
+
+  // Bottom column (points upward into gap)
+  const bottomH = h - gapY - floorH;
+  drawSandstoneColumn(x, gapY, w, bottomH, 'up', rng);
+}
+
+
   // Bird images
   const birdIdle = new Image();
   birdIdle.src = './assets/Apple_Fly.png';
@@ -135,6 +220,7 @@
       topH: topY,
       gapY: topY + PIPE_GAP,
       scored: false,
+      seed: Math.random(), // <-- add this
     });
   }
 
