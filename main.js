@@ -40,7 +40,7 @@
   const FLOOR_HEIGHT = 90;    // logical floor for collisions (we won't draw it)
   const DRAW_H = 100;                     // the bh you use to draw
   const DRAW_W = 100;                     // the bw you use to draw
-  const COLLIDER_R = Math.min(DRAW_W, DRAW_H) * 0.24; // ~32px for 100
+  const COLLIDER_R = Math.min(DRAW_W, DRAW_H) * 0.20; // ~32px for 100
   // State
   let state = 'ready'; // ready | playing | gameover
   let bird = { x:120, y:200, vy:0, r: COLLIDER_R, rot:0, flapTimer:0 };
@@ -95,7 +95,7 @@
     if (state === 'ready') start();
     if (state !== 'playing') return;
     bird.vy = JUMP_VY;
-    bird.flapTimer = 600; // show flap image for 750ms
+    bird.flapTimer = 450; // show flap image for 750ms
   }
 
   // Inputs
