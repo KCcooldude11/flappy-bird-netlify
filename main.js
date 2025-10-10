@@ -10,133 +10,187 @@
   let bgReady = false;
   bg.onload = () => { bgReady = true; };
 
-// --- Rock-spike rendering helpers (sandstone look) ---
-const SAND_LIGHT  = '#e9ddc8';
-const SAND_MID    = '#d8c7a8';
-const SAND_SHADOW = '#cbb895';
+// === Basalt spire renderer (stylized, darker) ===
+const BASALT_DARK   = '#2c3035';
+const BASALT_MID    = '#494f57';
+const BASALT_LIGHT  = '#9aa2ad';
+const BASALT_RIM    = '#cfd6df';  // faint cool rim light
 
-// Tiny seeded RNG so each column keeps its shape frame-to-frame
 function makeRNG(seed) {
   let s = Math.floor(seed * 1e9) % 2147483647;
   if (s <= 0) s += 2147483646;
   return () => (s = (s * 48271) % 2147483647) / 2147483647;
 }
 
-// Build a jagged edge polygon along the “gap” side
-function buildJaggedEdge(xStart, yStart, length, inward, teethCount, rng) {
-  // returns an array of points [ {x,y}, ... ] from top→bottom (or bottom→top)
-  const pts = [];
-  const step = length / teethCount;
-  for (let i = 0; i <= teethCount; i++) {
-    const y = yStart + step * i;
-    // varied tooth depth (2px–10px)
-    const depth = inward * (4 + 6 * rng());
-    // Alternate long/short for a more natural look
-    const d = (i % 2 === 0) ? depth : depth * 0.45;
-    pts.push({ x: xStart + d, y });
+// soft “noise” helper
+function n01(rng, k=1) { return (rng() + rng()*0.5)*k; }
+
+// silhouette for a spire: slight waist + cap bulge toward the gap
+function buildVerticalProfile(x, y, w, h, towardGap, rng) {
+  // returns two arrays: leftEdge(top->bottom), rightEdge(bottom->top)
+  const steps = Math.max(10, Math.floor(h / 36));
+  const left  = [];
+  const right = [];
+
+  const waist = 0.88 + 0.04 * n01(rng);         // slight inward at mid
+  const belly = 1.06 + 0.05 * n01(rng);         // cap bulge at gap end
+  const capH  = Math.min(28, Math.max(16, h * 0.18));
+  const capAtTop = (towardGap === 'down');      // top spire points down, bottom points up
+
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;                         // 0 at top, 1 at bottom
+    const yy = y + h * t;
+
+    // how far from the gap-facing end?
+    const tFromCap = capAtTop ? t : (1 - t);
+    const capBoost = Math.max(0, 1 - (tFromCap * h) / capH); // only near cap
+
+    // base width factor along height
+    const waistShape = 1 - 0.12 * Math.sin(Math.PI * t) + 0.02 * Math.sin(4*Math.PI*t);
+    const base = w * (0.95 * waistShape * (waist + 0.02 * n01(rng)));
+
+    // add a cap bulge near gap end
+    const extra = (w * 0.12) * Math.pow(capBoost, 1.2);
+
+    const total = Math.min(w, Math.max(w*0.72, base + extra));
+
+    // a tiny jitter so edges aren't laser-straight
+    const jitter = (n01(rng)-0.5) * 4;
+
+    const half = total * 0.5;
+    left.push({ x: x + (w * 0.5 - half) + jitter, y: yy });
+    right.push({ x: x + (w * 0.5 + half) + jitter, y: yy });
   }
-  return pts;
+
+  return { left, right };
 }
 
-function buildJaggedBottomEdge(x, y, w, inward, teethCount, rng) {
-  // returns points left->right along a wavy edge pushed upward (negative inward)
-  const pts = [];
-  const step = w / teethCount;
-  for (let i = 0; i <= teethCount; i++) {
-    const xx = x + step * i;
-    const depth = inward * (0.45 + 0.55 * rng());
-    const d = (i % 2 === 0) ? depth : depth * 0.4;
-    pts.push({ x: xx, y: y - d }); // edge pulled upward
+// subtle horizontal strata
+function drawStrata(x, y, w, h, rng) {
+  const lines = Math.max(6, Math.floor(h / 28));
+  ctx.globalAlpha = 0.25;
+  ctx.strokeStyle = BASALT_LIGHT;
+  ctx.lineWidth = 2;
+  for (let i = 0; i < lines; i++) {
+    const yy = y + (h * (i + 1) / (lines + 1)) + (rng()-0.5)*3;
+    ctx.beginPath();
+    // squiggle across
+    const wiggles = 6;
+    for (let j = 0; j <= wiggles; j++) {
+      const xx = x + (w * j / wiggles);
+      const off = Math.sin((j + rng()*0.5) * 1.8) * 2;
+      if (j === 0) ctx.moveTo(xx, yy + off); else ctx.lineTo(xx, yy + off);
+    }
+    ctx.stroke();
   }
-  return pts;
+  ctx.globalAlpha = 1;
 }
 
-function drawSandstoneColumn(x, y, w, h, towardGap, rng) {
-  // Base block (slightly rounded)
-  const r = 8;
-  ctx.fillStyle = SAND_MID;
+// top spire (points downward into gap)
+function drawBasaltTop(x, y, w, h, rng) {
+  const { left, right } = buildVerticalProfile(x, y, w, h, 'down', rng);
+
+  // base fill (mid)
   ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y,     x + w, y + r, r);
-  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-  ctx.arcTo(x,     y + h, x,     y + h - r, r);
-  ctx.arcTo(x,     y,     x + r, y, r);
+  ctx.moveTo(left[0].x, left[0].y);
+  for (let i = 1; i < left.length; i++) ctx.lineTo(left[i].x, left[i].y);
+  for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i].x, right[i].y);
   ctx.closePath();
+  ctx.fillStyle = BASALT_MID;
   ctx.fill();
 
-  // Light face overlay
+  // vertical gradient shading
   const grad = ctx.createLinearGradient(x, y, x, y + h);
-  grad.addColorStop(0, SAND_LIGHT);
-  grad.addColorStop(1, SAND_MID);
+  grad.addColorStop(0, BASALT_LIGHT);
+  grad.addColorStop(0.5, BASALT_MID);
+  grad.addColorStop(1, BASALT_DARK);
+  ctx.globalAlpha = 0.75;
   ctx.fillStyle = grad;
-  ctx.fillRect(x + 2, y + 2, w - 6, h - 6);
+  ctx.fill();
+  ctx.globalAlpha = 1;
 
-  // Jagged inner edge (toward the gap)
-  const edgeX = towardGap === 'down' ? x : x; // using left edge as anchor
-  const innerDir = (towardGap === 'down') ? 1 : 1; // positive = into gap
-  const teeth = Math.max(6, Math.floor(h / 26));
-  const pts = buildJaggedEdge(edgeX, y, h, innerDir * (w * 0.35), teeth, rng);
-
+  // rim light along cap edge (bottom)
   ctx.beginPath();
-  // Outer vertical edge (right side)
-  ctx.moveTo(x + w, y);
-  ctx.lineTo(x + w, y + h);
-  // bottom edge back to start of jagged
-  ctx.lineTo(x, y + h);
-  // jagged up along inner edge
-  for (let i = pts.length - 1; i >= 0; i--) {
-    const p = pts[i];
+  for (let i = right.length - 1; i >= 0; i--) {
+    const t = i / right.length;
+    if (t > 0.75) continue; // only near the cap
+    const p = right[i];
+    if (i === right.length - 1) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+  }
+  for (let i = 0; i < left.length; i++) {
+    const t = i / left.length;
+    if (t <= 0.25) continue;
+    const p = left[i];
     ctx.lineTo(p.x, p.y);
   }
-  ctx.closePath();
-  ctx.fillStyle = SAND_SHADOW;
-  ctx.globalAlpha = 0.6;
-  ctx.fill();
+  ctx.strokeStyle = BASALT_RIM;
+  ctx.globalAlpha = 0.35;
+  ctx.lineWidth = 3;
+  ctx.stroke();
   ctx.globalAlpha = 1;
+
+  // strata
+  // compute bounding box to lay horizontal lines roughly
+  const topY = y, botY = y + h;
+  const minX = Math.min(...left.map(p => p.x), ...right.map(p => p.x));
+  const maxX = Math.max(...left.map(p => p.x), ...right.map(p => p.x));
+  drawStrata(minX+6, topY+6, (maxX-minX)-12, (botY-topY)-12, rng);
 }
 
-function drawSandstoneBottom(x, y, w, h, rng) {
-  // Bottom column: y..y+h, jagged TOP edge at y
-  // Base block
-  ctx.fillStyle = SAND_MID;
-  ctx.fillRect(x, y, w, h);
-
-  // Light face
-  const grad = ctx.createLinearGradient(x, y, x, y + h);
-  grad.addColorStop(0, SAND_MID);
-  grad.addColorStop(1, SAND_LIGHT);
-  ctx.fillStyle = grad;
-  ctx.fillRect(x + 2, y + 4, w - 4, h - 6);
-
-  // Jagged top shadow
-  const teeth = Math.max(6, Math.floor(w / 18));
-  const pts = buildJaggedBottomEdge(x, y, w, Math.min(18, w * 0.35), teeth, rng);
+// bottom spire (points upward into gap)
+function drawBasaltBottom(x, y, w, h, rng) {
+  const { left, right } = buildVerticalProfile(x, y, w, h, 'up', rng);
 
   ctx.beginPath();
-  ctx.moveTo(x, y + h);           // bottom-left
-  ctx.lineTo(x + w, y + h);       // bottom-right
-  ctx.lineTo(x + w, y);           // up right
-  // jagged along top from right->left
-  for (let i = pts.length - 1; i >= 0; i--) ctx.lineTo(pts[i].x, pts[i].y);
-  ctx.lineTo(x, y + h);           // close
+  ctx.moveTo(left[0].x, left[0].y);
+  for (let i = 1; i < left.length; i++) ctx.lineTo(left[i].x, left[i].y);
+  for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i].x, right[i].y);
   ctx.closePath();
-  ctx.fillStyle = SAND_SHADOW;
-  ctx.globalAlpha = 0.6;
+  ctx.fillStyle = BASALT_MID;
+  ctx.fill();
+
+  const grad = ctx.createLinearGradient(x, y, x, y + h);
+  grad.addColorStop(0, BASALT_DARK);
+  grad.addColorStop(0.5, BASALT_MID);
+  grad.addColorStop(1, BASALT_LIGHT);
+  ctx.globalAlpha = 0.75;
+  ctx.fillStyle = grad;
   ctx.fill();
   ctx.globalAlpha = 1;
+
+  // rim light along cap edge (top)
+  ctx.beginPath();
+  for (let i = 0; i < right.length; i++) {
+    const t = i / right.length;
+    if (t > 0.25) break;
+    const p = right[i];
+    if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+  }
+  for (let i = left.length - 1; i >= 0; i--) {
+    const t = i / left.length;
+    if (t < 0.75) break;
+    const p = left[i];
+    ctx.lineTo(p.x, p.y);
+  }
+  ctx.strokeStyle = BASALT_RIM;
+  ctx.globalAlpha = 0.35;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  const topY = y, botY = y + h;
+  const minX = Math.min(...left.map(p => p.x), ...right.map(p => p.x));
+  const maxX = Math.max(...left.map(p => p.x), ...right.map(p => p.x));
+  drawStrata(minX+6, topY+6, (maxX-minX)-12, (botY-topY)-12, rng);
 }
 
-// Draw both top and bottom “spike” columns
-function drawRockColumns(x, topH, gapY, w, h, floorH, seed) {
+function drawBasaltColumns(x, topH, gapY, w, h, floorH, seed) {
   const rng = makeRNG(seed);
-
-  // Top column (points downward into gap)
-  drawSandstoneColumn(x, 0, w, topH, 'down', rng);
-
-  // Bottom column (points upward into gap)
+  drawBasaltTop(x, 0, w, topH, rng);
   const bottomH = h - gapY - floorH;
-  drawSandstoneColumn(x, gapY, w, bottomH, 'up', rng);
+  drawBasaltBottom(x, gapY, w, bottomH, rng);
 }
+
 
 
   // Bird images
@@ -345,9 +399,8 @@ function drawRockColumns(x, topH, gapY, w, h, floorH, seed) {
       ctx.fillRect(0,0,w,h);
     }
 
-    // Pipes
     for (let p of pipes) {
-  drawRockColumns(p.x, p.topH, p.gapY, PIPE_WIDTH, h, FLOOR_HEIGHT, p.seed);
+  drawBasaltColumns(p.x, p.topH, p.gapY, PIPE_WIDTH, h, FLOOR_HEIGHT, p.seed);
 }
 
     // Bird
