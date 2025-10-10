@@ -38,13 +38,12 @@
   const PIPE_INTERVAL = 1500; // ms
   const PIPE_WIDTH = 70;      // px
   const FLOOR_HEIGHT = 90;    // logical floor for collisions (we won't draw it)
-
+  const DRAW_H = 100;                     // the bh you use to draw
+  const DRAW_W = 100;                     // the bw you use to draw
+  const COLLIDER_R = Math.min(DRAW_W, DRAW_H) * 0.32; // ~32px for 100
   // State
   let state = 'ready'; // ready | playing | gameover
-  let bird = {
-    x: 120, y: 200, vy: 0, r: 60, rot: 0, // r upscaled for 230x230 draw
-    flapTimer: 0, // ms remaining to show flap image
-  };
+  let bird = { x:120, y:200, vy:0, r: COLLIDER_R, rot:0, flapTimer:0 };
   let pipes = [];
   let lastPipeAt = 0;
   let lastTime = 0;
@@ -96,7 +95,7 @@
     if (state === 'ready') start();
     if (state !== 'playing') return;
     bird.vy = JUMP_VY;
-    bird.flapTimer = 80; // show flap image for 750ms
+    bird.flapTimer = 300; // show flap image for 750ms
   }
 
   // Inputs
