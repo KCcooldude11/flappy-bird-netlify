@@ -38,6 +38,19 @@ function buildJaggedEdge(xStart, yStart, length, inward, teethCount, rng) {
   return pts;
 }
 
+function buildJaggedBottomEdge(x, y, w, inward, teethCount, rng) {
+  // returns points left->right along a wavy edge pushed upward (negative inward)
+  const pts = [];
+  const step = w / teethCount;
+  for (let i = 0; i <= teethCount; i++) {
+    const xx = x + step * i;
+    const depth = inward * (0.45 + 0.55 * rng());
+    const d = (i % 2 === 0) ? depth : depth * 0.4;
+    pts.push({ x: xx, y: y - d }); // edge pulled upward
+  }
+  return pts;
+}
+
 function drawSandstoneColumn(x, y, w, h, towardGap, rng) {
   // Base block (slightly rounded)
   const r = 8;
@@ -75,6 +88,37 @@ function drawSandstoneColumn(x, y, w, h, towardGap, rng) {
     const p = pts[i];
     ctx.lineTo(p.x, p.y);
   }
+  ctx.closePath();
+  ctx.fillStyle = SAND_SHADOW;
+  ctx.globalAlpha = 0.6;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+function drawSandstoneBottom(x, y, w, h, rng) {
+  // Bottom column: y..y+h, jagged TOP edge at y
+  // Base block
+  ctx.fillStyle = SAND_MID;
+  ctx.fillRect(x, y, w, h);
+
+  // Light face
+  const grad = ctx.createLinearGradient(x, y, x, y + h);
+  grad.addColorStop(0, SAND_MID);
+  grad.addColorStop(1, SAND_LIGHT);
+  ctx.fillStyle = grad;
+  ctx.fillRect(x + 2, y + 4, w - 4, h - 6);
+
+  // Jagged top shadow
+  const teeth = Math.max(6, Math.floor(w / 18));
+  const pts = buildJaggedBottomEdge(x, y, w, Math.min(18, w * 0.35), teeth, rng);
+
+  ctx.beginPath();
+  ctx.moveTo(x, y + h);           // bottom-left
+  ctx.lineTo(x + w, y + h);       // bottom-right
+  ctx.lineTo(x + w, y);           // up right
+  // jagged along top from right->left
+  for (let i = pts.length - 1; i >= 0; i--) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.lineTo(x, y + h);           // close
   ctx.closePath();
   ctx.fillStyle = SAND_SHADOW;
   ctx.globalAlpha = 0.6;
@@ -303,13 +347,8 @@ function drawRockColumns(x, topH, gapY, w, h, floorH, seed) {
 
     // Pipes
     for (let p of pipes) {
-      ctx.fillStyle = '#2fbf71';
-      ctx.fillRect(p.x, 0, PIPE_WIDTH, p.topH);
-      ctx.fillRect(p.x - 4, p.topH - 14, PIPE_WIDTH + 8, 14); // top lip
-      const bottomH = h - p.gapY - FLOOR_HEIGHT;
-      ctx.fillRect(p.x, p.gapY, PIPE_WIDTH, bottomH);
-      ctx.fillRect(p.x - 4, p.gapY, PIPE_WIDTH + 8, 14); // bottom lip
-    }
+  drawRockColumns(p.x, p.topH, p.gapY, PIPE_WIDTH, h, FLOOR_HEIGHT, p.seed);
+}
 
     // Bird
     ctx.save();
