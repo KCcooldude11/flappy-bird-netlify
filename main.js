@@ -12,9 +12,9 @@
 
   // Bird images
   const birdIdle = new Image();
-  birdIdle.src = './assets/Apple_Regular.png';
+  birdIdle.src = './assets/Apple_Fly.png';
   const birdFlap = new Image();
-  birdFlap.src = './assets/Apple_Fly.png';
+  birdFlap.src = './assets/Apple_Regular.png';
 
   // DPI scaling for crispness
   const DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
