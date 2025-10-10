@@ -11,10 +11,16 @@
   bg.onload = () => { bgReady = true; };
 
 // === Basalt spire renderer (stylized, darker) ===
-const BASALT_DARK   = '#2c3035';
-const BASALT_MID    = '#494f57';
-const BASALT_LIGHT  = '#9aa2ad';
-const BASALT_RIM    = '#cfd6df';  // faint cool rim light
+const ROCK_DARK  = '#473b2a'; // deep brown
+const ROCK_MID   = '#6b5942'; // mid brown
+const ROCK_LIGHT = '#b39b79'; // highlight brown
+const ROCK_RIM   = '#efe6d2'; // warm rim light (subtle)
+
+const MOSS_DARK  = '#5f8a3e';
+const MOSS_MID   = '#78a44f';
+const MOSS_LIGHT = '#a8d080';
+
+function n01(rng, k=1) { return (rng() + rng()*0.5)*k; }
 
 function makeRNG(seed) {
   let s = Math.floor(seed * 1e9) % 2147483647;
@@ -25,60 +31,96 @@ function makeRNG(seed) {
 // soft “noise” helper
 function n01(rng, k=1) { return (rng() + rng()*0.5)*k; }
 
-// silhouette for a spire: slight waist + cap bulge toward the gap
-function buildVerticalProfile(x, y, w, h, towardGap, rng) {
-  // returns two arrays: leftEdge(top->bottom), rightEdge(bottom->top)
-  const steps = Math.max(10, Math.floor(h / 36));
-  const left  = [];
-  const right = [];
 
-  const waist = 0.88 + 0.04 * n01(rng);         // slight inward at mid
-  const belly = 1.06 + 0.05 * n01(rng);         // cap bulge at gap end
-  const capH  = Math.min(28, Math.max(16, h * 0.18));
-  const capAtTop = (towardGap === 'down');      // top spire points down, bottom points up
+function drawMossStrip(x, y, w, thickness, orientation, rng) {
+  // orientation: 'top' (bottom column cap) or 'bottom' (top column cap)
+  const steps = Math.max(8, Math.floor(w / 18));
+  const pts = [];
+  const base = thickness;
 
   for (let i = 0; i <= steps; i++) {
-    const t = i / steps;                         // 0 at top, 1 at bottom
+    const t = i / steps;
+    const xx = x + w * t;
+    // wavy height + a few dangling drips
+    const wave = Math.sin(t * Math.PI * 2 + rng()*0.6) * 2 + (rng()-0.5)*2;
+    const drip = (rng() < 0.18) ? (4 + rng()*12) : 0;
+    const h = base + wave + drip;
+
+    // top cap sits *above* y, bottom cap sits *below* y
+    const yy = (orientation === 'top') ? (y - h) : (y + h);
+    pts.push({ x: xx, y: yy });
+  }
+
+  // fill
+  const grad = ctx.createLinearGradient(x, y, x, (orientation === 'top') ? (y - base) : (y + base));
+  grad.addColorStop(0, MOSS_MID);
+  grad.addColorStop(1, MOSS_LIGHT);
+  ctx.fillStyle = grad;
+
+  ctx.beginPath();
+  if (orientation === 'top') {
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + w, y);
+    for (let i = pts.length - 1; i >= 0; i--) ctx.lineTo(pts[i].x, pts[i].y);
+  } else {
+    ctx.moveTo(x, y);
+    for (let i = 0; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.lineTo(x + w, y);
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  // moss edge highlight
+  ctx.strokeStyle = MOSS_DARK;
+  ctx.globalAlpha = 0.35;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i];
+    if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+  }
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+// silhouette for a spire: slight waist + cap bulge toward the gap
+function buildVerticalProfile(x, y, w, h, towardGap, rng) {
+  const steps = Math.max(10, Math.floor(h / 36));
+  const left  = [], right = [];
+  const waist = 0.88 + 0.04 * n01(rng);
+  const belly = 1.06 + 0.05 * n01(rng);
+  const capH  = Math.min(28, Math.max(16, h * 0.18));
+  const capAtTop = (towardGap === 'down');
+
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
     const yy = y + h * t;
-
-    // how far from the gap-facing end?
     const tFromCap = capAtTop ? t : (1 - t);
-    const capBoost = Math.max(0, 1 - (tFromCap * h) / capH); // only near cap
-
-    // base width factor along height
+    const capBoost = Math.max(0, 1 - (tFromCap * h) / capH);
     const waistShape = 1 - 0.12 * Math.sin(Math.PI * t) + 0.02 * Math.sin(4*Math.PI*t);
     const base = w * (0.95 * waistShape * (waist + 0.02 * n01(rng)));
-
-    // add a cap bulge near gap end
     const extra = (w * 0.12) * Math.pow(capBoost, 1.2);
-
     const total = Math.min(w, Math.max(w*0.72, base + extra));
-
-    // a tiny jitter so edges aren't laser-straight
-    const jitter = (n01(rng)-0.5) * 4;
-
+    const jitter = (n01(rng)-0.5) * 3;
     const half = total * 0.5;
     left.push({ x: x + (w * 0.5 - half) + jitter, y: yy });
     right.push({ x: x + (w * 0.5 + half) + jitter, y: yy });
   }
-
   return { left, right };
 }
 
-// subtle horizontal strata
 function drawStrata(x, y, w, h, rng) {
   const lines = Math.max(6, Math.floor(h / 28));
   ctx.globalAlpha = 0.25;
-  ctx.strokeStyle = BASALT_LIGHT;
+  ctx.strokeStyle = ROCK_LIGHT;
   ctx.lineWidth = 2;
   for (let i = 0; i < lines; i++) {
-    const yy = y + (h * (i + 1) / (lines + 1)) + (rng()-0.5)*3;
+    const yy = y + (h * (i + 1) / (lines + 1)) + (rng()-0.5)*2.5;
     ctx.beginPath();
-    // squiggle across
     const wiggles = 6;
     for (let j = 0; j <= wiggles; j++) {
       const xx = x + (w * j / wiggles);
-      const off = Math.sin((j + rng()*0.5) * 1.8) * 2;
+      const off = Math.sin((j + rng()*0.5) * 1.8) * 1.6;
       if (j === 0) ctx.moveTo(xx, yy + off); else ctx.lineTo(xx, yy + off);
     }
     ctx.stroke();
@@ -86,58 +128,54 @@ function drawStrata(x, y, w, h, rng) {
   ctx.globalAlpha = 1;
 }
 
-// top spire (points downward into gap)
 function drawBasaltTop(x, y, w, h, rng) {
   const { left, right } = buildVerticalProfile(x, y, w, h, 'down', rng);
 
-  // base fill (mid)
+  // base silhouette
   ctx.beginPath();
   ctx.moveTo(left[0].x, left[0].y);
   for (let i = 1; i < left.length; i++) ctx.lineTo(left[i].x, left[i].y);
   for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i].x, right[i].y);
   ctx.closePath();
-  ctx.fillStyle = BASALT_MID;
+  ctx.fillStyle = ROCK_MID;
   ctx.fill();
 
-  // vertical gradient shading
+  // warm vertical gradient
   const grad = ctx.createLinearGradient(x, y, x, y + h);
-  grad.addColorStop(0, BASALT_LIGHT);
-  grad.addColorStop(0.5, BASALT_MID);
-  grad.addColorStop(1, BASALT_DARK);
+  grad.addColorStop(0, ROCK_LIGHT);
+  grad.addColorStop(0.5, ROCK_MID);
+  grad.addColorStop(1, ROCK_DARK);
   ctx.globalAlpha = 0.75;
   ctx.fillStyle = grad;
   ctx.fill();
   ctx.globalAlpha = 1;
 
-  // rim light along cap edge (bottom)
+  // rim light near cap
   ctx.beginPath();
-  for (let i = right.length - 1; i >= 0; i--) {
-    const t = i / right.length;
-    if (t > 0.75) continue; // only near the cap
+  for (let i = right.length - 1; i >= Math.floor(right.length*0.75); i--) {
     const p = right[i];
     if (i === right.length - 1) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
   }
-  for (let i = 0; i < left.length; i++) {
-    const t = i / left.length;
-    if (t <= 0.25) continue;
+  for (let i = Math.floor(left.length*0.25); i < left.length; i++) {
     const p = left[i];
     ctx.lineTo(p.x, p.y);
   }
-  ctx.strokeStyle = BASALT_RIM;
+  ctx.strokeStyle = ROCK_RIM;
   ctx.globalAlpha = 0.35;
   ctx.lineWidth = 3;
   ctx.stroke();
   ctx.globalAlpha = 1;
 
   // strata
-  // compute bounding box to lay horizontal lines roughly
   const topY = y, botY = y + h;
   const minX = Math.min(...left.map(p => p.x), ...right.map(p => p.x));
   const maxX = Math.max(...left.map(p => p.x), ...right.map(p => p.x));
   drawStrata(minX+6, topY+6, (maxX-minX)-12, (botY-topY)-12, rng);
+
+  // MOSS on the bottom cap edge
+  drawMossStrip(minX+4, y + h, (maxX-minX)-8, 12, 'bottom', rng);
 }
 
-// bottom spire (points upward into gap)
 function drawBasaltBottom(x, y, w, h, rng) {
   const { left, right } = buildVerticalProfile(x, y, w, h, 'up', rng);
 
@@ -146,33 +184,29 @@ function drawBasaltBottom(x, y, w, h, rng) {
   for (let i = 1; i < left.length; i++) ctx.lineTo(left[i].x, left[i].y);
   for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i].x, right[i].y);
   ctx.closePath();
-  ctx.fillStyle = BASALT_MID;
+  ctx.fillStyle = ROCK_MID;
   ctx.fill();
 
   const grad = ctx.createLinearGradient(x, y, x, y + h);
-  grad.addColorStop(0, BASALT_DARK);
-  grad.addColorStop(0.5, BASALT_MID);
-  grad.addColorStop(1, BASALT_LIGHT);
+  grad.addColorStop(0, ROCK_DARK);
+  grad.addColorStop(0.5, ROCK_MID);
+  grad.addColorStop(1, ROCK_LIGHT);
   ctx.globalAlpha = 0.75;
   ctx.fillStyle = grad;
   ctx.fill();
   ctx.globalAlpha = 1;
 
-  // rim light along cap edge (top)
+  // rim light near cap
   ctx.beginPath();
-  for (let i = 0; i < right.length; i++) {
-    const t = i / right.length;
-    if (t > 0.25) break;
+  for (let i = 0; i <= Math.floor(right.length*0.25); i++) {
     const p = right[i];
     if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
   }
-  for (let i = left.length - 1; i >= 0; i--) {
-    const t = i / left.length;
-    if (t < 0.75) break;
+  for (let i = left.length - 1; i >= Math.floor(left.length*0.75); i--) {
     const p = left[i];
     ctx.lineTo(p.x, p.y);
   }
-  ctx.strokeStyle = BASALT_RIM;
+  ctx.strokeStyle = ROCK_RIM;
   ctx.globalAlpha = 0.35;
   ctx.lineWidth = 3;
   ctx.stroke();
@@ -182,6 +216,9 @@ function drawBasaltBottom(x, y, w, h, rng) {
   const minX = Math.min(...left.map(p => p.x), ...right.map(p => p.x));
   const maxX = Math.max(...left.map(p => p.x), ...right.map(p => p.x));
   drawStrata(minX+6, topY+6, (maxX-minX)-12, (botY-topY)-12, rng);
+
+  // MOSS on the top cap edge
+  drawMossStrip(minX+4, y, (maxX-minX)-8, 12, 'top', rng);
 }
 
 function drawBasaltColumns(x, topH, gapY, w, h, floorH, seed) {
@@ -190,6 +227,7 @@ function drawBasaltColumns(x, topH, gapY, w, h, floorH, seed) {
   const bottomH = h - gapY - floorH;
   drawBasaltBottom(x, gapY, w, bottomH, rng);
 }
+
 
 
 
