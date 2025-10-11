@@ -181,6 +181,7 @@ function drawSpireTiledDown(x, y, w, h) {
 
   g.restore();
 }
+const BIRD_X = () => Math.round(W() * 0.5);
 
   // ===== Bird images =====
   const birdIdle = new Image();
