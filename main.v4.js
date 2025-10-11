@@ -3,6 +3,21 @@
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
 
+  // Block browser gestures inside the canvas (iOS/Android)
+// NOTE: passive:false is required to allow preventDefault().
+['touchstart','touchmove','touchend','touchcancel'].forEach(type => {
+  canvas.addEventListener(type, e => e.preventDefault(), { passive: false });
+});
+
+// Some browsers still emit dblclick from double-tap; block it.
+canvas.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+
+// Older iOS Safari fires these "gesture*" events on pinch; block them too.
+document.addEventListener('gesturestart',  e => e.preventDefault(), { passive: false });
+document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
+document.addEventListener('gestureend',    e => e.preventDefault(), { passive: false });
+
+
   // --- Assets ---
   // Background image (load once)
   const bg = new Image();
