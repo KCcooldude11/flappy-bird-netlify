@@ -19,11 +19,15 @@
   let bgReady = false;
   bg.onload = () => { bgReady = true; };
 
-  // Spire art (stretched vertically only)
-  const spireImg = new Image();
-  spireImg.src = './assets/rock_spire.png';
-  let spireReady = false;
-  spireImg.onload = () => { spireReady = true; };
+  // New segmented spire art
+  const SEG_SRC_TILE_H = 22; // source tile height in px (as you said)
+  const segTile = new Image();         // ./assets/rock_spire_bottom.png
+  const segCap  = new Image();         // ./assets/rock_spire_top.png
+  segTile.src = './assets/rock_spire_bottom.png';
+  segCap.src  = './assets/rock_spire_top.png';
+  let segReady = { tile:false, cap:false };
+  segTile.onload = () => segReady.tile = true;
+  segCap.onload  = () => segReady.cap  = true;
 
   // Medallion art
   const medalImg = new Image();
@@ -32,41 +36,27 @@
   medalImg.onload = () => { medalReady = true; };
 
   // ===== Skins queue =====
-  // Add more skins by appending entries here with the file names you’ll add later.
   const SKINS = [
     { name: 'Apple', idle: './assets/Apple_Fly.png',  flap: './assets/Apple_Regular.png' },
-    { name: 'Comet', idle: './assets/Comet_Fly.png',  flap: './assets/Comet_Regular.png' }, // optional now
+    { name: 'Comet', idle: './assets/Comet_Fly.png',  flap: './assets/Comet_Regular.png' }, // (optional until you add)
   ];
-
-  // Preload all skins; mark readiness per image
   for (const s of SKINS) {
     s.idleImg = new Image();
     s.flapImg = new Image();
     s.idleReady = false;
     s.flapReady = false;
-
     s.idleImg.onload = () => { s.idleReady = true; };
     s.flapImg.onload = () => { s.flapReady = true; };
-
-    // If a file is missing, onerror prevents hard breaks; we just won't switch to that skin.
     s.idleImg.onerror = () => { s.idleReady = false; };
     s.flapImg.onerror = () => { s.flapReady = false; };
-
     s.idleImg.src = s.idle;
     s.flapImg.src = s.flap;
   }
-
   const skinReady = (i) => !!(SKINS[i] && SKINS[i].idleReady && SKINS[i].flapReady);
-
-  // Current skin pointers used by draw()
   let currentSkinIndex = 0;
-  // Fallback to first ready skin at startup
-  for (let i = 0; i < SKINS.length; i++) {
-    if (skinReady(i)) { currentSkinIndex = i; break; }
-  }
+  for (let i = 0; i < SKINS.length; i++) { if (skinReady(i)) { currentSkinIndex = i; break; } }
   let currentIdleImg = SKINS[currentSkinIndex].idleImg;
   let currentFlapImg = SKINS[currentSkinIndex].flapImg;
-
   function switchToSkin(i) {
     if (!skinReady(i)) return false;
     currentSkinIndex = i;
@@ -74,22 +64,21 @@
     currentFlapImg = SKINS[i].flapImg;
     return true;
   }
-
   function nextSkin() {
-    // Try the next ready skin; wrap around
     const start = (currentSkinIndex + 1) % SKINS.length;
     for (let k = 0; k < SKINS.length; k++) {
       const idx = (start + k) % SKINS.length;
       if (switchToSkin(idx)) return true;
     }
-    return false; // none ready; keep current
+    return false;
   }
 
   // --- Spire collision tuning ---
-  const HIT_INSET_X = () => Math.round(PIPE_WIDTH() * 0.14); // 12–18% works well
-  const CAP_INSET_Y = () => Math.round(8 * S);                // soften near the cap edges
+  const HIT_INSET_X = () => Math.round(PIPE_WIDTH() * 0.14);
+  const CAP_INSET_Y = () => Math.round(8 * S);
 
-  const START_X_FRAC = 0.28;           // <— was 0.50; move player left
+  // Player X (further left)
+  const START_X_FRAC = 0.28;
   const BIRD_X = () => Math.round(W() * START_X_FRAC);
 
   // --- Canvas DPI scaling ---
@@ -134,32 +123,87 @@
   window.addEventListener('resize', () => {
     resizeCanvas();
     recomputeScale();
-    bird.x = BIRD_X();                        // recenter on resize
+    bird.x = BIRD_X();
     if (state !== 'playing') {
-      bird.y = Math.round(H()/2 - 80 * S);   // recenter vertically when not playing
+      bird.y = Math.round(H()/2 - 80 * S);
     }
   });
 
-  // ===== Spire drawing (stretch vertically only) =====
-  function drawSpireStretchV(x, y, w, h, orientation = 'up') {
-    if (!spireReady || w <= 0 || h <= 0) return;
+  // ===== Segmented spire helpers =====
+  function segScaleX() {
+    // scale by width so we don't distort aspect; use tile's source width
+    if (!segReady.tile) return 1;
+    return PIPE_WIDTH() / segTile.width;
+  }
+  function scaledHeights() {
+    const sx = segScaleX();
+    // Using the actual cap image height; tile is 22px in the source
+    const tileH = Math.round(SEG_SRC_TILE_H * sx);
+    const capH  = segReady.cap ? Math.round(segCap.height * sx) : 0;
+    return { tileH, capH, sx };
+  }
 
-    const dx = Math.round(x);
-    const dy = Math.round(y);
-    const dw = Math.round(w);
-    const dh = Math.round(h);
+  // Quantize a desired spire height to N*tile + cap (never exceed desired)
+  function quantizeSpireHeight(desiredH) {
+    const { tileH, capH } = scaledHeights();
+    if (tileH <= 0) return desiredH;
+    const usable = Math.max(0, desiredH - capH);
+    const n = Math.max(0, Math.floor(usable / tileH));
+    return n * tileH + capH;
+  }
 
+  // Draw a segmented spire into (x, y, w, h)
+  // orientation: 'up'   -> grows upward (bottom spire: stack from bottom, cap at top near the gap)
+  //               'down' -> hangs downward (top spire: stack from top, cap at bottom near the gap)
+  function drawSpireSegmented(x, y, w, h, orientation = 'up') {
+    if (!segReady.tile) return;              // need tile at least
+    if (w <= 0 || h <= 0) return;
+
+    const { tileH, capH, sx } = scaledHeights();
+    if (tileH <= 0) return;
+
+    // Clip to the target rect so we never overdraw
     ctx.save();
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+
+    // number of tiles that fit with a cap
+    const usable = Math.max(0, h - capH);
+    const nTiles = Math.max(0, Math.floor(usable / tileH));
+
+    // common draw helper
+    function drawTile(dx, dy) {
+      ctx.drawImage(segTile, dx, dy, Math.round(segTile.width * sx), tileH);
+    }
+    function drawCap(dx, dy) {
+      if (!segReady.cap) return;
+      ctx.drawImage(segCap, dx, dy, Math.round(segCap.width * sx), capH);
+    }
+
+    const drawW = Math.round(segTile.width * sx); // equals PIPE_WIDTH()
+    const startX = Math.round(x);
 
     if (orientation === 'up') {
-      ctx.drawImage(spireImg, 0, 0, spireImg.width, spireImg.height, dx, dy, dw, dh);
-    } else { // 'down' (flip vertically)
-      ctx.translate(0, dy + dh);
-      ctx.scale(1, -1);
-      ctx.drawImage(spireImg, 0, 0, spireImg.width, spireImg.height, dx, 0, dw, dh);
+      // Start from bottom of rect, stack tiles upward, then cap at the top near the gap
+      let cursorY = Math.round(y + h - tileH);
+      for (let i = 0; i < nTiles; i++) {
+        drawTile(startX, cursorY);
+        cursorY -= tileH;
+      }
+      // place cap flush at top inside the rect
+      const capY = Math.round(y);
+      drawCap(startX, capY);
+    } else {
+      // orientation 'down' — start from top, stack tiles downward, cap at the bottom near the gap
+      let cursorY = Math.round(y);
+      for (let i = 0; i < nTiles; i++) {
+        drawTile(startX, cursorY);
+        cursorY += tileH;
+      }
+      // cap at the bottom inside the rect
+      const capY = Math.round(y + h - capH);
+      drawCap(startX, capY);
     }
+
     ctx.restore();
   }
 
@@ -199,12 +243,10 @@
     score = 0;
     if (scoreEl) scoreEl.textContent = '0';
 
-    // pickups reset
     medallions = [];
     columnsSpawned = 0;
     nextMedalColumn = 6;
 
-    // ensure a valid skin is selected after resize/restart
     if (!skinReady(currentSkinIndex)) {
       for (let i = 0; i < SKINS.length; i++) {
         if (skinReady(i)) { switchToSkin(i); break; }
@@ -348,7 +390,26 @@
     const marginTop = Math.round(40 * S);
     const marginBot = Math.round(40 * S);
     const maxTop = H() - marginBot - PIPE_GAP() - marginTop;
-    const topY = marginTop + Math.random() * Math.max(40 * S, maxTop);
+
+    // Start with a continuous (float) topY…
+    let topY = marginTop + Math.random() * Math.max(40 * S, maxTop);
+
+    // …then quantize it so the drawn spires use whole 22px tiles + cap.
+    // We quantize both the top spire height and the bottom spire height.
+    if (segReady.tile) {
+      // Top spire quantization:
+      const qTop = quantizeSpireHeight(topY);
+      // Bottom spire quantization (height below the gap):
+      const desiredBottomH = H() - (qTop + PIPE_GAP());
+      const qBottom = quantizeSpireHeight(desiredBottomH);
+      // Recompute topY so that (qTop + PIPE_GAP + qBottom) fits exactly.
+      // If images just loaded and numbers mismatch, clamp sanely.
+      const total = qTop + PIPE_GAP() + qBottom;
+      if (total <= H() - marginBot) {
+        topY = qTop; // cleanly quantized
+      } // else fall back to original topY (rare, only when margins extremely tight)
+    }
+
     const x = W() + 40 * S;
 
     const prev = pipes[pipes.length - 1];
@@ -365,14 +426,14 @@
       // Safe vertical inside previous gap, with a bit of jitter
       const gapTop = prev.topH;
       const gapBot = prev.gapY;
-      const safeMargin = Math.round(0.2 * PIPE_GAP()); // keep away from caps
+      const safeMargin = Math.round(0.2 * PIPE_GAP());
       const minY = gapTop + safeMargin;
       const maxY = gapBot - safeMargin;
       const centerY = (minY + maxY) / 2;
-      const jitter = (Math.random() * 0.4 - 0.2) * (maxY - minY); // ±20% of safe gap
+      const jitter = (Math.random() * 0.4 - 0.2) * (maxY - minY);
       const my = Math.round(centerY + jitter);
 
-      const size = Math.max(68, Math.round(28 * S)); // visual size
+      const size = Math.max(68, Math.round(28 * S));
       medallions.push({ x: mx, y: my, size, r: Math.round(size * 0.42), taken: false });
 
       // Next one around every 10 columns with a small random offset (±2)
@@ -411,7 +472,6 @@
     }
 
     for (let p of pipes) {
-      // Tightened rectangles (inset horizontally, and soften near the gap)
       const ix = HIT_INSET_X();
       const iy = CAP_INSET_Y();
 
@@ -421,7 +481,6 @@
         w: Math.max(0, PIPE_WIDTH() - ix * 2),
         h: Math.max(0, p.topH - iy)
       };
-
       const botRect = {
         x: p.x + ix,
         y: p.gapY + iy,
@@ -446,17 +505,14 @@
     if (medallions.length) {
       for (let m of medallions) {
         m.x -= PIPE_SPEED() * dt; // scroll with world
-
-        // circle-circle collision
         const dx = bird.x - m.x;
         const dy = bird.y - m.y;
         const rr = (bird.r + m.r);
         if (!m.taken && (dx*dx + dy*dy) < rr*rr) {
-          m.taken = true;           // vanish for now
-          nextSkin();               // << switch to next skin on pickup
+          m.taken = true;           // vanish
+          nextSkin();               // switch to next skin
         }
       }
-      // remove taken or offscreen
       medallions = medallions.filter(m => !m.taken && (m.x + m.size) > -40*S);
     }
   }
@@ -484,11 +540,13 @@
       ctx.fillRect(0,0,w,h);
     }
 
-    // Spires (pipes)
+    // Spires (segmented)
     for (let p of pipes) {
-      drawSpireStretchV(p.x, 0, PIPE_WIDTH(), p.topH, 'down');
+      // top spire (hangs down)
+      drawSpireSegmented(p.x, 0, PIPE_WIDTH(), p.topH, 'down');
+      // bottom spire (grows up)
       const bottomH = h - p.gapY;
-      drawSpireStretchV(p.x, p.gapY, PIPE_WIDTH(), bottomH, 'up');
+      drawSpireSegmented(p.x, p.gapY, PIPE_WIDTH(), bottomH, 'up');
     }
 
     // Medallions
@@ -523,4 +581,74 @@
 
   // Initial draw
   draw();
+
+  // ===== Leaderboard/helpers (unchanged) =====
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function renderLeaderboard(list){
+    const wrap = document.getElementById('leaderboard-rows');
+    if (!wrap) return;
+    if (!Array.isArray(list) || list.length === 0){
+      wrap.innerHTML = `<div style="opacity:.8">No scores yet.</div>`;
+      return;
+    }
+    wrap.innerHTML = list.map((r, i) => `
+      <div class="row">
+        <span class="rank">${i+1}.</span>
+        <span class="name">${escapeHtml(r.name ?? 'Player')}</span>
+        <span class="score">${Number(r.score ?? 0)}</span>
+      </div>
+    `).join('');
+  }
+  async function postScore(deviceId, score, playMs) {
+    try {
+      const res = await fetch('/.netlify/functions/submit-score', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ deviceId, score, playMs })
+      });
+      return await res.json();
+    } catch (e) { return { error: e.message }; }
+  }
+  let runStartTime = 0;
+  function markRunStart() { runStartTime = performance.now(); }
+  async function loadLeaderboard() {
+    try {
+      const res = await fetch('/.netlify/functions/get-leaderboard?limit=10');
+      const { scores } = await res.json();
+      renderLeaderboard(scores || []);
+    } catch (e) {
+      console.warn('leaderboard fetch error', e);
+    }
+  }
+  function ensureDeviceId() {
+    let id = localStorage.getItem('deviceId');
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem('deviceId', id);
+    }
+    return id;
+  }
+  function getOrAskName() {
+    let name = localStorage.getItem('playerName');
+    if (!name) {
+      name = (prompt('Choose a username (max 16):') || 'Guest').slice(0,16).trim();
+      localStorage.setItem('playerName', name);
+    }
+    return name;
+  }
+  async function registerIdentityIfNeeded() {
+    const deviceId = ensureDeviceId();
+    let name = localStorage.getItem('playerName');
+    if (!name) name = getOrAskName();
+    try {
+      await fetch('/.netlify/functions/register-identity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId, name })
+      });
+    } catch {}
+    return { deviceId, name };
+  }
 })();
