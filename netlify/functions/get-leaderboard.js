@@ -1,17 +1,16 @@
-// netlify/functions/get-leaderboard.js
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE
 );
 
-export default async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers: corsHeaders() };
+  }
 
-  const limit = Math.min(50, Number(req.query.limit || 10));
+  const limit = Math.min(50, Number((event.queryStringParameters || {}).limit || 10));
 
   const { data, error } = await supabase
     .from('scores')
@@ -20,6 +19,20 @@ export default async (req, res) => {
     .order('created_at', { ascending: true })
     .limit(limit);
 
-  if (error) return res.status(500).json({ error: error.message });
-  return res.status(200).json({ scores: data });
+  if (error) return json(500, { error: error.message });
+  return json(200, { scores: data });
 };
+
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET,OPTIONS',
+  };
+}
+function json(status, body) {
+  return {
+    statusCode: status,
+    headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+    body: JSON.stringify(body),
+  };
+}

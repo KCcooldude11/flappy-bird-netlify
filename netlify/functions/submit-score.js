@@ -1,5 +1,4 @@
-// netlify/functions/submit-score.js
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -7,42 +6,60 @@ const supabase = createClient(
 );
 
 const MAX_SCORE = 999999;
-const MIN_PLAY_MS = 1500; // quick sanity
+const MIN_PLAY_MS = 1500;
 
-export default async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers: corsHeaders() };
+  }
+  if (event.httpMethod !== 'POST') {
+    return json(405, { error: 'POST only' });
+  }
 
-  const { deviceId, score, playMs } = req.body || {};
-  const cleanId = String(deviceId || '').slice(0, 64).trim();
-  const cleanScore = Number(score);
+  let body;
+  try { body = JSON.parse(event.body || '{}'); } catch { body = {}; }
 
-  if (!cleanId) return res.status(400).json({ error: 'deviceId required' });
-  if (!Number.isFinite(cleanScore) || cleanScore < 0 || cleanScore > MAX_SCORE) {
-    return res.status(400).json({ error: 'Invalid score' });
+  const deviceId = String(body.deviceId || '').slice(0, 64).trim();
+  const score = Number(body.score);
+  const playMs = Number(body.playMs);
+
+  if (!deviceId) return json(400, { error: 'deviceId required' });
+  if (!Number.isFinite(score) || score < 0 || score > MAX_SCORE) {
+    return json(400, { error: 'Invalid score' });
   }
   if (Number.isFinite(playMs) && playMs < MIN_PLAY_MS) {
-    return res.status(400).json({ error: 'Too fast to be legit' });
+    return json(400, { error: 'Too fast to be legit' });
   }
 
-  // Get the current name tied to this device
   const { data: profile, error: pErr } = await supabase
     .from('profiles')
     .select('name')
-    .eq('device_id', cleanId)
+    .eq('device_id', deviceId)
     .single();
 
-  if (pErr || !profile) return res.status(400).json({ error: 'Unknown deviceId (register first)' });
+  if (pErr || !profile) return json(400, { error: 'Unknown deviceId (register first)' });
 
   const { data, error } = await supabase
     .from('scores')
-    .insert({ device_id: cleanId, name: profile.name, score: cleanScore })
+    .insert({ device_id: deviceId, name: profile.name, score })
     .select('name, score, created_at')
     .single();
 
-  if (error) return res.status(500).json({ error: error.message });
-  return res.status(200).json({ ok: true, score: data });
+  if (error) return json(500, { error: error.message });
+  return json(200, { ok: true, score: data });
 };
+
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+}
+function json(status, body) {
+  return {
+    statusCode: status,
+    headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+    body: JSON.stringify(body),
+  };
+}
