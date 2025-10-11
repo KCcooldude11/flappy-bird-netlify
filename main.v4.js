@@ -111,44 +111,69 @@
   });
 
   // ===== Segmented spire helpers =====
-  function segScaleX(){ return (segReady.tile && segTile.width) ? (PIPE_WIDTH() / segTile.width) : 1; }
-  function scaledHeights(){
+  function segScaleX() {
+    // scale by width so aspect of art is preserved
+    if (!segTile.width) return 1;
+    return PIPE_WIDTH() / segTile.width;
+  }
+
+  // return *float* heights to avoid cumulative rounding seams
+  function scaledHeightsF() {
     const sx = segScaleX();
-    const tileH = Math.round(SEG_SRC_TILE_H * sx);
-    const capH  = segReady.cap ? Math.round(segCap.height * sx) : 0;
+    const tileH = SEG_SRC_TILE_H * sx;                  // float
+    const capH  = (segCap.height || 0) * sx;            // float
     return { tileH, capH, sx };
   }
-  function quantizeSpireHeight(desiredH){
-    const { tileH, capH } = scaledHeights();
+
+  // keep the “quantize to tiles + cap” behavior using float math
+  function quantizeSpireHeight(desiredH) {
+    const { tileH, capH } = scaledHeightsF();
     if (tileH <= 0) return desiredH;
     const usable = Math.max(0, desiredH - capH);
-    const n = Math.max(0, Math.floor(usable / tileH));
+    const n = Math.max(0, Math.floor(usable / tileH + 1e-6));
     return n * tileH + capH;
   }
-  function drawSpireSegmented(x, y, w, h, orientation='up'){
-    if (!segReady.tile || w <= 0 || h <= 0) return;
-    const { tileH, capH, sx } = scaledHeights(); if (tileH <= 0) return;
 
-    ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+  // Draw the stack "growing up" inside (x,y,w,h): tiles first, then cap at top.
+  function drawStackUp(x, y, w, h) {
+    const { tileH, capH, sx } = scaledHeightsF();
+    if (!segReady.tile || tileH <= 0 || w <= 0 || h <= 0) return;
 
+    // clip to target rect
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+
+    // keep edges crisp and avoid seams
+    ctx.imageSmoothingEnabled = false;
+
+    const drawW = segTile.width * sx;                  // float draw width
     const usable = Math.max(0, h - capH);
-    const nTiles = Math.max(0, Math.floor(usable / tileH));
-    const drawW  = Math.round((segTile.width || w) * sx);
-    const dx = Math.round(x);
+    const nTiles = Math.max(0, Math.floor(usable / tileH + 1e-6));
 
-    const drawTile = (tx, ty) => ctx.drawImage(segTile, tx, ty, drawW, tileH);
-    const drawCap  = (cx, cy) => { if (segReady.cap) ctx.drawImage(segCap, cx, cy, drawW, capH); };
-
-    if (orientation === 'up'){
-      let yCursor = Math.round(y + h - tileH);
-      for (let i = 0; i < nTiles; i++){ drawTile(dx, yCursor); yCursor -= tileH; }
-      drawCap(dx, Math.round(y));
-    } else {
-      let yCursor = Math.round(y);
-      for (let i = 0; i < nTiles; i++){ drawTile(dx, yCursor); yCursor += tileH; }
-      drawCap(dx, Math.round(y + h - capH));
+    // tiles stack from bottom up, stop right under the cap
+    let cursorY = y + h - tileH;
+    for (let i = 0; i < nTiles; i++) {
+      ctx.drawImage(segTile, x, cursorY, drawW, tileH);
+      cursorY -= tileH;
     }
+    // cap sits flush at the top (the "mouth" near the gap)
+    if (segReady.cap) ctx.drawImage(segCap, x, y, drawW, capH);
+
     ctx.restore();
+  }
+
+  // orientation: 'up' grows upward, 'down' hangs down but drawn as a 180° flip
+  function drawSpireSegmented(x, y, w, h, orientation = 'up') {
+    if (orientation === 'up') {
+      drawStackUp(x, y, w, h);
+    } else {
+      // 180° flip of the whole rect, then reuse the "up" routine
+      ctx.save();
+      ctx.translate(x + w, y + h);
+      ctx.scale(-1, -1);
+      drawStackUp(0, 0, w, h);
+      ctx.restore();
+    }
   }
 
   // ===== Leaderboard / identity =====
