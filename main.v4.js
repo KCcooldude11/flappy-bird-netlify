@@ -91,39 +91,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ===== Spire drawing (cover + clip, no tiling) =====
   // Spire drawing (cover + clip, with a small horizontal bleed so edges aren't cut)
-function drawSpireCover(x, y, w, h, orientation = 'up') {
+const BLEED_FRAC = 0.14; // try 0.12–0.18
+
+function drawSpireCover(x, y, w, h, orientation='up') {
   if (!spireReady) return;
 
-  const iw = spireImg.width, ih = spireImg.height;
+  // bleed scales with width and keeps a small minimum
+  const bleed = Math.ceil(Math.max(6 * S, w * BLEED_FRAC));
 
-  // let the art hang a few px outside the column so the outline isn't clipped
-  const bleed = Math.round(6 * S);             // tweak 4–8 * S to taste
-  const clipX = x - bleed;
+  const iw = spireImg.width, ih = spireImg.height;
+  const clipX = x - bleed;            // wider clip horizontally
   const clipW = w + bleed * 2;
 
-  // scale to COVER the (w + 2*bleed) × h area
+  // cover the widened clip rect
   const s  = Math.max(clipW / iw, h / ih);
-  const dw = iw * s;
-  const dh = ih * s;
-
-  // center inside the widened clip area
+  const dw = iw * s, dh = ih * s;
   const dx = clipX + (clipW - dw) / 2;
 
   ctx.save();
   ctx.beginPath();
-  ctx.rect(clipX, y, clipW, h);  // wider horizontal clip, same vertical clip
+  ctx.rect(clipX, y, clipW, h);       // <- wider clip so edges aren’t cut
   ctx.clip();
 
   if (orientation === 'up') {
-    const dy = y + h - dh;       // anchor bottom
+    const dy = y + h - dh;            // anchor bottom
     ctx.drawImage(spireImg, dx, dy, dw, dh);
   } else {
     ctx.translate(0, y);
     ctx.scale(1, -1);
-    const dy = -h;               // anchor top in flipped space
+    const dy = -h;                    // anchor top in flipped space
     ctx.drawImage(spireImg, dx, dy, dw, dh);
   }
-
   ctx.restore();
 }
 
@@ -363,9 +361,22 @@ async function registerIdentityIfNeeded() {
       return gameOver();
     }
 
+     const hitInset = Math.ceil(Math.max(2 * S, PIPE_WIDTH() * (BLEED_FRAC * 0.6)));
+
+
     for (let p of pipes) {
-      const topRect = { x: p.x, y: 0, w: PIPE_WIDTH(), h: p.topH };
-      const botRect = { x: p.x, y: p.gapY, w: PIPE_WIDTH(), h: H() - p.gapY };   // no FLOOR_HEIGHT()
+       const topRect = {
+      x: p.x + hitInset,
+      y: 0,
+      w: PIPE_WIDTH() - hitInset * 2,
+      h: p.topH
+    };
+    const botRect = {
+      x: p.x + hitInset,
+      y: p.gapY,
+      w: PIPE_WIDTH() - hitInset * 2,
+      h: H() - p.gapY
+    };
       if (circleRectOverlap(bird.x, bird.y, bird.r, topRect.x, topRect.y, topRect.w, topRect.h) ||
           circleRectOverlap(bird.x, bird.y, bird.r, botRect.x, botRect.y, botRect.w, botRect.h)) {
         return gameOver();
