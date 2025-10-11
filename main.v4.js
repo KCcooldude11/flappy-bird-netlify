@@ -59,6 +59,10 @@ document.addEventListener('gestureend',    e => e.preventDefault(), { passive: f
   }
   recomputeScale();
 
+  registerIdentityIfNeeded();
+
+  const DEVICE_ID = ensureDeviceId();
+
   // Derived sizes/speeds as functions (so they update when S changes)
   const GRAVITY      = () => 1400 * S;               // px/s^2
   const JUMP_VY      = () => -420 * S;               // px/s
@@ -158,18 +162,17 @@ document.addEventListener('gestureend',    e => e.preventDefault(), { passive: f
     requestAnimationFrame(loop);
   }
 
-  async function postScore(name, score, playMs) {
+  async function postScore(deviceId, score, playMs) {
     try {
       const res = await fetch('/.netlify/functions/submit-score', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, score, playMs })
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ deviceId, score, playMs })
       });
       return await res.json();
-    } catch (e) {
-      return { error: e.message };
-    }
+    } catch (e) { return { error: e.message }; }
   }
+
 
   let runStartTime = 0;
 
@@ -188,9 +191,43 @@ document.addEventListener('gestureend',    e => e.preventDefault(), { passive: f
     console.warn('leaderboard fetch error', e);
   }
 }
+  function ensureDeviceId() {
+  let id = localStorage.getItem('deviceId');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('deviceId', id);
+  }
+  return id;
+}
+
+function getOrAskName() {
+  let name = localStorage.getItem('playerName');
+  if (!name) {
+    name = (prompt('Choose a username (max 16):') || 'Guest').slice(0,16).trim();
+    localStorage.setItem('playerName', name);
+  }
+  return name;
+}
+
+async function registerIdentityIfNeeded() {
+  const deviceId = ensureDeviceId();
+  let name = localStorage.getItem('playerName');
+  if (!name) name = getOrAskName();
+
+  // Tell the server once (or whenever name changes)
+  try {
+    await fetch('/.netlify/functions/register-identity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceId, name })
+    });
+  } catch {}
+  return { deviceId, name };
+}
 
 
-  async function gameOver() {
+
+ async function gameOver() {
   state = 'gameover';
   if (score > best) {
     best = score;
@@ -199,22 +236,15 @@ document.addEventListener('gestureend',    e => e.preventDefault(), { passive: f
   }
   if (gameoverEl) { gameoverEl.classList.remove('hide'); gameoverEl.classList.add('show'); }
 
-  // get player name (remember it)
-  let name = localStorage.getItem('playerName');
-  if (!name) {
-    name = prompt('Your name for the leaderboard (max 16 chars):') || 'Guest';
-    name = name.slice(0, 16).trim();
-    localStorage.setItem('playerName', name);
-  }
-
+  // No more name prompt — name was registered already and is tied to DEVICE_ID
   const playMs = Math.round(performance.now() - runStartTime);
 
-  const result = await postScore(name, score, playMs);
+  const result = await postScore(DEVICE_ID, score, playMs);
   if (result?.error) console.warn('submit-score error:', result.error);
 
-  // refresh leaderboard (no need to await if you don't want to)
   await loadLeaderboard();
 }
+
 
 
   function flap() {
