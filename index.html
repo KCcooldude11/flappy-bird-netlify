@@ -29,9 +29,18 @@
         <button id="btn-play">Play</button>
       </div>
       <div id="gameover" class="hide">
-        <h2>Game Over</h2>
-        <p><button id="btn-try">Try Again</button></p>
-      </div>
+  <h2>Game Over</h2>
+  <div id="leaderboard" class="leaderboard">
+    <div class="lb-title">Top Scores</div>
+    <div class="lb-head row">
+      <span class="rank">#</span>
+      <span class="name">Player</span>
+      <span class="score">Score</span>
+    </div>
+    <div id="leaderboard-rows" class="lb-rows"></div>
+  </div>
+  <p><button id="btn-try">Try Again</button></p>
+</div>
     </div>
     <script src="./main.v4.js"></script>
   </body>
