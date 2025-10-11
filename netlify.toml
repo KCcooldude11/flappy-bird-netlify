@@ -3,6 +3,9 @@
   command = ""
   functions = "netlify/functions"
 
+[functions]
+  node_bundler = "esbuild"   # default but explicit
+
 [[headers]]
   for = "/*"
   [headers.values]

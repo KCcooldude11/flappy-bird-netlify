@@ -2,8 +2,8 @@
   "name": "flapple-bird",
   "version": "1.0.0",
   "private": true,
+  "engines": { "node": ">=18" },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0"
-  },
-  "engines": { "node": ">=18" }
+    "@supabase/supabase-js": "^2.75.0"
+  }
 }

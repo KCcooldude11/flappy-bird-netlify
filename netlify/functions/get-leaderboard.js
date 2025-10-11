@@ -1,38 +1,27 @@
-const { createClient } = require('@supabase/supabase-js');
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE
-);
+const { supabase } = require('./_utils/supabase');
 
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: corsHeaders() };
+  try {
+    const url = new URL(event.rawUrl || `http://x${event.path}`);
+    const limit = Math.max(1, Math.min(100, Number(url.searchParams.get('limit') || 10)));
+
+    const { data, error } = await supabase
+      .from('scores')
+      .select('name, score, created_at')
+      .order('score', { ascending: false })
+      .order('created_at', { ascending: true })
+      .limit(limit);
+
+    if (error) {
+      return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+    }
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scores: data || [] }),
+    };
+  } catch (e) {
+    return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
   }
-
-  const limit = Math.min(50, Number((event.queryStringParameters || {}).limit || 10));
-
-  const { data, error } = await supabase
-    .from('scores')
-    .select('name, score, created_at')
-    .order('score', { ascending: false })
-    .order('created_at', { ascending: true })
-    .limit(limit);
-
-  if (error) return json(500, { error: error.message });
-  return json(200, { scores: data });
 };
-
-function corsHeaders() {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,OPTIONS',
-  };
-}
-function json(status, body) {
-  return {
-    statusCode: status,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders() },
-    body: JSON.stringify(body),
-  };
-}
