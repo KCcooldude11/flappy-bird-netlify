@@ -10,108 +10,93 @@
   let bgReady = false;
   bg.onload = () => { bgReady = true; };
 
-// === Basalt spire renderer (stylized, darker) ===
-const ROCK_DARK  = '#473b2a'; // deep brown
-const ROCK_MID   = '#6b5942'; // mid brown
-const ROCK_LIGHT = '#b39b79'; // highlight brown
-const ROCK_RIM   = '#efe6d2'; // warm rim light (subtle)
+  // Rock spire image (one tall asset)
+  const spireImg = new Image();
+  spireImg.src = './assets/rock_spire.png';
+  let spireReady = false;
+  spireImg.onload = () => { spireReady = true; };
 
-const MOSS_DARK  = '#5f8a3e';
-const MOSS_MID   = '#78a44f';
-const MOSS_LIGHT = '#a8d080';
+  // --- Canvas DPI scaling ---
+  const DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+  function resizeCanvas() {
+    const cssW = canvas.clientWidth || canvas.width;
+    const cssH = canvas.clientHeight || canvas.height;
+    canvas.width  = cssW * DPR;
+    canvas.height = cssH * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  resizeCanvas();
 
-// Rock spire image (load once)
-const spireImg = new Image();
-spireImg.src = './assets/rock_spire.png';
-let spireReady = false;
-spireImg.onload = () => { spireReady = true; };
+  // Helpers to read CSS pixel size of the canvas
+  const W = () => (canvas.clientWidth  || canvas.width  / DPR);
+  const H = () => (canvas.clientHeight || canvas.height / DPR);
 
+  // ===== Responsive scaling =====
+  // Tune BASE_H to change overall difficulty/feel globally.
+  const BASE_H = 720;         // "design" height we based the old numbers on
+  let S = 1;                  // global scale factor
+  function recomputeScale() {
+    S = H() / BASE_H;
+    if (!Number.isFinite(S) || S <= 0) S = 1;
+  }
+  recomputeScale();
 
-function n01(rng, k=1) { return (rng() + rng()*0.5)*k; }
+  // Derived sizes/speeds as functions (so they update when S changes)
+  const GRAVITY      = () => 1400 * S;               // px/s^2
+  const JUMP_VY      = () => -420 * S;               // px/s
+  const PIPE_SPEED   = () => 160  * S;               // px/s
+  const PIPE_GAP     = () => Math.round(160 * S);    // px
+  const PIPE_INTERVAL = 1500;                        // ms (keep time constant)
+  const PIPE_WIDTH   = () => Math.round(70  * S);    // px
+  const FLOOR_HEIGHT = () => Math.round(90  * S);    // px
+  const BIRD_W       = () => Math.round(100 * S);
+  const BIRD_H       = () => Math.round(100 * S);
+  const BIRD_R       = () => Math.round(Math.min(BIRD_W(), BIRD_H()) * 0.20);
 
-function makeRNG(seed) {
-  let s = Math.floor(seed * 1e9) % 2147483647;
-  if (s <= 0) s += 2147483646;
-  return () => (s = (s * 48271) % 2147483647) / 2147483647;
-}
+  // Recompute scale + canvas on resize
+  window.addEventListener('resize', () => {
+    resizeCanvas();
+    recomputeScale();
+    // Optionally: restart a running game to avoid weird mid-flight resizes:
+    // if (state === 'playing') start();
+  });
 
-// soft “noise” helper
-function n01(rng, k=1) { return (rng() + rng()*0.5)*k; }
+  // ===== Spire drawing (cover + clip, no tiling) =====
+  function drawSpireCover(x, y, w, h, orientation='up') {
+    if (!spireReady) return;
 
-// Draw a single spire as a cropped window of the tall PNG.
-// orientation: 'up'  -> rises from the gap (bottom spire)
-//               'down'-> hangs from the ceiling (top spire)
+    const iw = spireImg.width, ih = spireImg.height;
+    const s  = Math.max(w / iw, h / ih); // cover
+    const dw = iw * s;
+    const dh = ih * s;
+    const dx = x + (w - dw) / 2;         // center horizontally
 
-// ONE long spire: scale the original PNG to COVER the column rect, then clip.
-// orientation: 'up' (rises from bottom) | 'down' (hangs from top)
-function drawSpireCover(x, y, w, h, orientation = 'up') {
-  if (!spireReady) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
 
-  const iw = spireImg.width, ih = spireImg.height;
-  // scale to cover (like CSS background-size: cover)
-  const s  = Math.max(w / iw, h / ih);
-  const dw = iw * s;
-  const dh = ih * s;
-  const dx = x + (w - dw) / 2;       // center horizontally within the column
-
-  ctx.save();
-  // clip to the column rectangle
-  ctx.beginPath();
-  ctx.rect(x, y, w, h);
-  ctx.clip();
-
-  if (orientation === 'up') {
-    // anchor the bottom of the art to the bottom of the column
-    const dy = y + h - dh;
-    ctx.drawImage(spireImg, dx, dy, dw, dh);
-  } else {
-    // flip vertically and anchor the top
-    ctx.translate(0, y);
-    ctx.scale(1, -1);
-    // after flipping, we draw into [-h, 0] in y
-    const dy = -h;                    // top of the clipped region in flipped space
-    ctx.drawImage(spireImg, dx, dy, dw, dh);
+    if (orientation === 'up') {
+      const dy = y + h - dh;             // anchor bottom
+      ctx.drawImage(spireImg, dx, dy, dw, dh);
+    } else {
+      ctx.translate(0, y);
+      ctx.scale(1, -1);
+      const dy = -h;                      // anchor top in flipped space
+      ctx.drawImage(spireImg, dx, dy, dw, dh);
+    }
+    ctx.restore();
   }
 
-  ctx.restore();
-}
-
-
-
-  // Bird images
+  // ===== Bird images =====
   const birdIdle = new Image();
   birdIdle.src = './assets/Apple_Fly.png';
   const birdFlap = new Image();
   birdFlap.src = './assets/Apple_Regular.png';
 
-  // DPI scaling for crispness
-  const DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
-  function resizeCanvas() {
-    const cssW = canvas.clientWidth || canvas.width;
-    const cssH = canvas.clientHeight || canvas.height;
-    canvas.width = cssW * DPR;
-    canvas.height = cssH * DPR;
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  }
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
-
-  // Game constants
-  const W = () => (canvas.clientWidth || canvas.width / DPR);
-  const H = () => (canvas.clientHeight || canvas.height / DPR);
-  const GRAVITY = 1400;       // px/s^2
-  const JUMP_VY = -420;       // px/s
-  const PIPE_SPEED = 160;     // px/s
-  const PIPE_GAP = 160;       // px
-  const PIPE_INTERVAL = 1500; // ms
-  const PIPE_WIDTH = 70;      // px
-  const FLOOR_HEIGHT = 90;    // logical floor for collisions (we won't draw it)
-  const DRAW_H = 100;                     // the bh you use to draw
-  const DRAW_W = 100;                     // the bw you use to draw
-  const COLLIDER_R = Math.min(DRAW_W, DRAW_H) * 0.20; // ~32px for 100
-  // State
+  // ===== Game state =====
   let state = 'ready'; // ready | playing | gameover
-  let bird = { x:120, y:200, vy:0, r: COLLIDER_R, rot:0, flapTimer:0 };
+  let bird = { x: Math.round(120 * S), y: Math.round(H()/2 - 80 * S), vy: 0, r: BIRD_R(), rot: 0, flapTimer: 0 };
   let pipes = [];
   let lastPipeAt = 0;
   let lastTime = 0;
@@ -126,25 +111,26 @@ function drawSpireCover(x, y, w, h, orientation = 'up') {
   const btnRestart = document.getElementById('btn-restart');
   const scoreEl = document.getElementById('score');
   const bestEl = document.getElementById('best');
-  bestEl.textContent = 'Best: ' + best;
+  if (bestEl) bestEl.textContent = 'Best: ' + best;
 
   function resetGame() {
-    bird.x = 120;
-    bird.y = H()/2 - 80;
+    bird.x = Math.round(120 * S);
+    bird.y = Math.round(H()/2 - 80 * S);
     bird.vy = 0;
     bird.rot = 0;
     bird.flapTimer = 0;
+    bird.r = BIRD_R();
     pipes = [];
     lastPipeAt = 0;
     score = 0;
-    scoreEl.textContent = '0';
+    if (scoreEl) scoreEl.textContent = '0';
   }
 
   function start() {
     resetGame();
     state = 'playing';
-    overlay.classList.add('hide'); overlay.classList.remove('show');
-    gameoverEl.classList.add('hide'); gameoverEl.classList.remove('show');
+    if (overlay)   { overlay.classList.add('hide');   overlay.classList.remove('show'); }
+    if (gameoverEl){ gameoverEl.classList.add('hide'); gameoverEl.classList.remove('show'); }
     lastTime = performance.now();
     requestAnimationFrame(loop);
   }
@@ -154,24 +140,24 @@ function drawSpireCover(x, y, w, h, orientation = 'up') {
     if (score > best) {
       best = score;
       localStorage.setItem('flappy-best', String(best));
-      bestEl.textContent = 'Best: ' + best;
+      if (bestEl) bestEl.textContent = 'Best: ' + best;
     }
-    gameoverEl.classList.remove('hide'); gameoverEl.classList.add('show');
+    if (gameoverEl){ gameoverEl.classList.remove('hide'); gameoverEl.classList.add('show'); }
   }
 
   function flap() {
     if (state === 'ready') start();
     if (state !== 'playing') return;
-    bird.vy = JUMP_VY;
-    bird.flapTimer = 450; // show flap image for 750ms
+    bird.vy = JUMP_VY();
+    bird.flapTimer = 450;
   }
 
   // Inputs
   window.addEventListener('keydown', (e) => {
     if (e.code === 'Space' || e.code === 'ArrowUp') {
       e.preventDefault();
-      if (state === 'gameover') { start(); }
-      else { flap(); }
+      if (state === 'gameover') start();
+      else flap();
     } else if (e.code === 'Enter' && state === 'ready') {
       start();
     }
@@ -183,27 +169,27 @@ function drawSpireCover(x, y, w, h, orientation = 'up') {
     else flap();
   }
   canvas.addEventListener('pointerdown', () => { pointerDown = true; onTap(); });
-  canvas.addEventListener('pointerup', () => { pointerDown = false; });
+  canvas.addEventListener('pointerup',   () => { pointerDown = false; });
 
-  btnPlay.addEventListener('click', start);
-  btnTry.addEventListener('click', start);
-  btnRestart.addEventListener('click', () => {
-    if (state === 'playing' || state === 'gameover') { start(); }
+  if (btnPlay)    btnPlay.addEventListener('click', start);
+  if (btnTry)     btnTry.addEventListener('click', start);
+  if (btnRestart) btnRestart.addEventListener('click', () => {
+    if (state === 'playing' || state === 'gameover') start();
   });
 
-  // Pipe helpers
+  // ===== Pipes (spires) =====
   function spawnPipePair() {
-    const marginTop = 40;
-    const marginBot = 40 + FLOOR_HEIGHT;
-    const maxTop = H() - marginBot - PIPE_GAP - marginTop;
-    const topY = marginTop + Math.random() * Math.max(40, maxTop);
-    const x = W() + 40;
+    const marginTop = Math.round(40 * S);
+    const marginBot = Math.round(40 * S) + FLOOR_HEIGHT();
+    const maxTop = H() - marginBot - PIPE_GAP() - marginTop;
+    const topY = marginTop + Math.random() * Math.max(40 * S, maxTop);
+    const x = W() + 40 * S;
     pipes.push({
       x,
       topH: topY,
-      gapY: topY + PIPE_GAP,
+      gapY: topY + PIPE_GAP(),
       scored: false,
-      seed: Math.random(), // <-- add this
+      seed: Math.random(),
     });
   }
 
@@ -219,47 +205,42 @@ function drawSpireCover(x, y, w, h, orientation = 'up') {
     if (state !== 'playing') return;
 
     // Bird physics
-    bird.vy += GRAVITY * dt;
-    bird.y += bird.vy * dt;
-    bird.rot = Math.atan2(bird.vy, 300); // velocity-based lean
+    bird.vy += GRAVITY() * dt;
+    bird.y  += bird.vy * dt;
+    bird.rot = Math.atan2(bird.vy, 300);
 
     if (bird.flapTimer > 0) bird.flapTimer -= dt*1000;
 
     // Pipes
-    if (lastPipeAt <= 0) {
-      spawnPipePair();
-      lastPipeAt = PIPE_INTERVAL;
-    } else {
-      lastPipeAt -= dt*1000;
-    }
+    if (lastPipeAt <= 0) { spawnPipePair(); lastPipeAt = PIPE_INTERVAL; }
+    else { lastPipeAt -= dt*1000; }
 
-    for (let p of pipes) {
-      p.x -= PIPE_SPEED * dt;
-    }
-    while (pipes.length && pipes[0].x + PIPE_WIDTH < -40) {
+    for (let p of pipes) { p.x -= PIPE_SPEED() * dt; }
+
+    while (pipes.length && pipes[0].x + PIPE_WIDTH() < -40 * S) {
       pipes.shift();
     }
 
     // Collision + scoring
-    const floorY = H() - FLOOR_HEIGHT;
+    const floorY = H() - FLOOR_HEIGHT();
 
     if (bird.y + bird.r >= floorY || bird.y - bird.r <= 0) {
       return gameOver();
     }
 
     for (let p of pipes) {
-      const topRect = { x: p.x, y: 0, w: PIPE_WIDTH, h: p.topH };
-      const botRect = { x: p.x, y: p.gapY, w: PIPE_WIDTH, h: H() - p.gapY - FLOOR_HEIGHT };
+      const topRect = { x: p.x, y: 0, w: PIPE_WIDTH(), h: p.topH };
+      const botRect = { x: p.x, y: p.gapY, w: PIPE_WIDTH(), h: H() - p.gapY - FLOOR_HEIGHT() };
 
       if (circleRectOverlap(bird.x, bird.y, bird.r, topRect.x, topRect.y, topRect.w, topRect.h) ||
           circleRectOverlap(bird.x, bird.y, bird.r, botRect.x, botRect.y, botRect.w, botRect.h)) {
         return gameOver();
       }
 
-      if (!p.scored && p.x + PIPE_WIDTH < bird.x) {
+      if (!p.scored && p.x + PIPE_WIDTH() < bird.x) {
         p.scored = true;
         score += 1;
-        scoreEl.textContent = String(score);
+        if (scoreEl) scoreEl.textContent = String(score);
       }
     }
   }
@@ -267,7 +248,7 @@ function drawSpireCover(x, y, w, h, orientation = 'up') {
   function draw() {
     const w = W(), h = H();
 
-    // --- Background (cover, no distortion) ---
+    // Background (cover, no distortion)
     if (bgReady) {
       const scale = Math.max(w / bg.width, h / bg.height);
       const dw = bg.width * scale;
@@ -276,7 +257,7 @@ function drawSpireCover(x, y, w, h, orientation = 'up') {
       const dy = (h - dh) / 2;
       ctx.drawImage(bg, dx, dy, dw, dh);
     } else {
-      // Fallback gradient until image loads
+      // fallback gradient
       const skyGrad = ctx.createLinearGradient(0,0,0,h);
       skyGrad.addColorStop(0, '#8fd0ff');
       skyGrad.addColorStop(1, '#bfe8ff');
@@ -284,29 +265,25 @@ function drawSpireCover(x, y, w, h, orientation = 'up') {
       ctx.fillRect(0,0,w,h);
     }
 
+    // Spires (pipes)
     for (let p of pipes) {
-      // top spire (hangs down into the gap)
-      drawSpireCover(p.x, 0, PIPE_WIDTH, p.topH, 'down');
+      // top spire (hangs down)
+      drawSpireCover(p.x, 0, PIPE_WIDTH(), p.topH, 'down');
 
-      // bottom spire (rises up from the gap)
-      const bottomH = H() - p.gapY - FLOOR_HEIGHT;
-      drawSpireCover(p.x, p.gapY, PIPE_WIDTH, bottomH, 'up');
+      // bottom spire (rises from gap)
+      const bottomH = H() - p.gapY - FLOOR_HEIGHT();
+      drawSpireCover(p.x, p.gapY, PIPE_WIDTH(), bottomH, 'up');
     }
-
 
     // Bird
     ctx.save();
     ctx.translate(bird.x, bird.y);
-    ctx.rotate(bird.rot * 0.45); // a bit less nose-down for big sprite
+    ctx.rotate(bird.rot * 0.45);
     const img = (bird.flapTimer > 0) ? birdFlap : birdIdle;
-    const bw = 100, bh = 100; // your requested draw size
-    ctx.drawImage(img, -bw/2, -bh/2, bw, bh);
+    ctx.drawImage(img, -BIRD_W()/2, -BIRD_H()/2, BIRD_W(), BIRD_H());
     ctx.restore();
 
-    // (Optional) Don't draw a floor so your art remains visible
-    // If you want a visible ground, re-add the floor rectangles here.
-
-    if (state === 'ready') {
+    if (state === 'ready' && overlay) {
       overlay.classList.add('show');
       overlay.classList.remove('hide');
     }
