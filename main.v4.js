@@ -90,31 +90,43 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
   // ===== Spire drawing (cover + clip, no tiling) =====
-  function drawSpireCover(x, y, w, h, orientation='up') {
-    if (!spireReady) return;
+  // Spire drawing (cover + clip, with a small horizontal bleed so edges aren't cut)
+function drawSpireCover(x, y, w, h, orientation = 'up') {
+  if (!spireReady) return;
 
-    const iw = spireImg.width, ih = spireImg.height;
-    const s  = Math.max(w / iw, h / ih); // cover
-    const dw = iw * s;
-    const dh = ih * s;
-    const dx = x + (w - dw) / 2;         // center horizontally
+  const iw = spireImg.width, ih = spireImg.height;
 
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(x, y, w, h);
-    ctx.clip();
+  // let the art hang a few px outside the column so the outline isn't clipped
+  const bleed = Math.round(6 * S);             // tweak 4–8 * S to taste
+  const clipX = x - bleed;
+  const clipW = w + bleed * 2;
 
-    if (orientation === 'up') {
-      const dy = y + h - dh;             // anchor bottom
-      ctx.drawImage(spireImg, dx, dy, dw, dh);
-    } else {
-      ctx.translate(0, y);
-      ctx.scale(1, -1);
-      const dy = -h;                      // anchor top in flipped space
-      ctx.drawImage(spireImg, dx, dy, dw, dh);
-    }
-    ctx.restore();
+  // scale to COVER the (w + 2*bleed) × h area
+  const s  = Math.max(clipW / iw, h / ih);
+  const dw = iw * s;
+  const dh = ih * s;
+
+  // center inside the widened clip area
+  const dx = clipX + (clipW - dw) / 2;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(clipX, y, clipW, h);  // wider horizontal clip, same vertical clip
+  ctx.clip();
+
+  if (orientation === 'up') {
+    const dy = y + h - dh;       // anchor bottom
+    ctx.drawImage(spireImg, dx, dy, dw, dh);
+  } else {
+    ctx.translate(0, y);
+    ctx.scale(1, -1);
+    const dy = -h;               // anchor top in flipped space
+    ctx.drawImage(spireImg, dx, dy, dw, dh);
   }
+
+  ctx.restore();
+}
+
 
   // ===== Bird images =====
   const birdIdle = new Image();
