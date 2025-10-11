@@ -150,6 +150,7 @@ document.addEventListener('gestureend',    e => e.preventDefault(), { passive: f
 
   function start() {
     resetGame();
+    markRunStart(); 
     state = 'playing';
     if (overlay)   { overlay.classList.add('hide');   overlay.classList.remove('show'); }
     if (gameoverEl){ gameoverEl.classList.add('hide'); gameoverEl.classList.remove('show'); }
@@ -157,15 +158,64 @@ document.addEventListener('gestureend',    e => e.preventDefault(), { passive: f
     requestAnimationFrame(loop);
   }
 
-  function gameOver() {
-    state = 'gameover';
-    if (score > best) {
-      best = score;
-      localStorage.setItem('flappy-best', String(best));
-      if (bestEl) bestEl.textContent = 'Best: ' + best;
+  async function postScore(name, score, playMs) {
+    try {
+      const res = await fetch('/.netlify/functions/submit-score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, score, playMs })
+      });
+      return await res.json();
+    } catch (e) {
+      return { error: e.message };
     }
-    if (gameoverEl){ gameoverEl.classList.remove('hide'); gameoverEl.classList.add('show'); }
   }
+
+  let runStartTime = 0;
+
+  // call this inside start()
+  function markRunStart() {
+    runStartTime = performance.now();
+  }
+
+  async function loadLeaderboard() {
+  try {
+    const res = await fetch('/.netlify/functions/get-leaderboard?limit=10');
+    const { scores } = await res.json();
+    // TODO: render your UI here:
+    // renderLeaderboard(scores || []);
+  } catch (e) {
+    console.warn('leaderboard fetch error', e);
+  }
+}
+
+
+  async function gameOver() {
+  state = 'gameover';
+  if (score > best) {
+    best = score;
+    localStorage.setItem('flappy-best', String(best));
+    if (bestEl) bestEl.textContent = 'Best: ' + best;
+  }
+  if (gameoverEl) { gameoverEl.classList.remove('hide'); gameoverEl.classList.add('show'); }
+
+  // get player name (remember it)
+  let name = localStorage.getItem('playerName');
+  if (!name) {
+    name = prompt('Your name for the leaderboard (max 16 chars):') || 'Guest';
+    name = name.slice(0, 16).trim();
+    localStorage.setItem('playerName', name);
+  }
+
+  const playMs = Math.round(performance.now() - runStartTime);
+
+  const result = await postScore(name, score, playMs);
+  if (result?.error) console.warn('submit-score error:', result.error);
+
+  // refresh leaderboard (no need to await if you don't want to)
+  await loadLeaderboard();
+}
+
 
   function flap() {
     if (state === 'ready') start();
