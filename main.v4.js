@@ -38,72 +38,43 @@ function makeRNG(seed) {
 // soft “noise” helper
 function n01(rng, k=1) { return (rng() + rng()*0.5)*k; }
 
-// Draw a spire column using the PNG, tiled vertically so it doesn't stretch.
-function drawSpireSlice(x, y, w, h, orientation='up') {
+// Draw a single spire as a cropped window of the tall PNG.
+// orientation: 'up'  -> rises from the gap (bottom spire)
+//               'down'-> hangs from the ceiling (top spire)
+
+// ONE long spire: scale the original PNG to COVER the column rect, then clip.
+// orientation: 'up' (rises from bottom) | 'down' (hangs from top)
+function drawSpireCover(x, y, w, h, orientation = 'up') {
   if (!spireReady) return;
 
-  // Fit width exactly; keep aspect ratio
-  const scale = w / spireImg.width;
-  const unitH = spireImg.height * scale;         // height of one spire at this width
-  const overlap = unitH * 0.25;                  // small overlap so seams aren’t obvious
-  const step = unitH - overlap;
+  const iw = spireImg.width, ih = spireImg.height;
+  // scale to cover (like CSS background-size: cover)
+  const s  = Math.max(w / iw, h / ih);
+  const dw = iw * s;
+  const dh = ih * s;
+  const dx = x + (w - dw) / 2;       // center horizontally within the column
+
+  ctx.save();
+  // clip to the column rectangle
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
 
   if (orientation === 'up') {
-    // bottom→up fill
-    let drawn = 0;
-    while (drawn < h) {
-      const drawH = Math.min(unitH, h - drawn + overlap);
-      const dy = y + drawn - (drawH - unitH);    // pull down a bit to hide seam
-      // draw
-      ctx.drawImage(spireImg, x, dy, w, drawH);
-      drawn += step;
-    }
+    // anchor the bottom of the art to the bottom of the column
+    const dy = y + h - dh;
+    ctx.drawImage(spireImg, dx, dy, dw, dh);
   } else {
-    // orientation 'down' (flip vertically), fill from top downward
-    // Flip around the top edge
-    ctx.save();
+    // flip vertically and anchor the top
     ctx.translate(0, y);
-    ctx.scale(1, -1); // vertical flip
-    // After flip, we draw "up" starting at -0 space, so y becomes -h
-    let drawn = 0;
-    while (drawn < h) {
-      const drawH = Math.min(unitH, h - drawn + overlap);
-      const dy = -drawn - drawH + (unitH - drawH);  // compensate for seam
-      ctx.drawImage(spireImg, x, dy, w, drawH);
-      drawn += step;
-    }
-    ctx.restore();
+    ctx.scale(1, -1);
+    // after flipping, we draw into [-h, 0] in y
+    const dy = -h;                    // top of the clipped region in flipped space
+    ctx.drawImage(spireImg, dx, dy, dw, dh);
   }
-}
 
-// Optional tint; use 'multiply' to darken or add moss tone without changing the sprite.
-function tintRect(x, y, w, h, color, alpha=0.25, mode='multiply') {
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.globalCompositeOperation = mode; // 'multiply' or 'overlay'
-  ctx.fillStyle = color;
-  ctx.fillRect(x, y, w, h);
   ctx.restore();
 }
-
-// Convenience: draw both top & bottom columns for a single pipe
-function drawSpireColumns(x, topH, gapY, w, h, floorH) {
-  // Top column (points downward into the gap)
-  drawSpireSlice(x, 0, w, topH, 'down');
-  // Bottom column (points upward into the gap)
-  const bottomH = h - gapY - floorH;
-  drawSpireSlice(x, gapY, w, bottomH, 'up');
-
-  // Optional: add darker + mossy tints to match your palette
-  // Darken slightly
-  tintRect(x, 0, w, topH, '#2a1e1a', 0.18, 'multiply');
-  tintRect(x, gapY, w, bottomH, '#2a1e1a', 0.18, 'multiply');
-  // Moss at cap edges (thin green strip)
-  tintRect(x, topH - 10, w, 12, '#6fa85b', 0.35, 'multiply'); // bottom edge of top spire
-  tintRect(x, gapY - 2,  w, 12, '#6fa85b', 0.35, 'multiply'); // top edge of bottom spire
-}
-
-
 
 
 
@@ -314,8 +285,14 @@ function drawSpireColumns(x, topH, gapY, w, h, floorH) {
     }
 
     for (let p of pipes) {
-  drawSpireColumns(p.x, p.topH, p.gapY, PIPE_WIDTH, h, FLOOR_HEIGHT);
-}
+      // top spire (hangs down into the gap)
+      drawSpireCover(p.x, 0, PIPE_WIDTH, p.topH, 'down');
+
+      // bottom spire (rises up from the gap)
+      const bottomH = H() - p.gapY - FLOOR_HEIGHT;
+      drawSpireCover(p.x, p.gapY, PIPE_WIDTH, bottomH, 'up');
+    }
+
 
     // Bird
     ctx.save();
