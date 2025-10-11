@@ -1,5 +1,5 @@
 * { box-sizing: border-box; }
-html, body { height: 100%; }
+html, body { height: 100%; margin:0; }
 body {
   margin: 0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
@@ -10,9 +10,11 @@ body {
 }
 #app { position: relative; }
 #game {
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.25);
-  background: linear-gradient(#8fd0ff, #bfe8ff);
+  /* Canvas will stretch in CSS; JS sets the internal pixel buffer */
+  width: 100vw;
+  height: 100vh;
+  display:block;
+  touch-action: manipulation; /* nicer taps on mobile */
 }
 #hud {
   position: absolute;
