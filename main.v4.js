@@ -16,6 +16,9 @@ canvas.addEventListener('dblclick', e => e.preventDefault(), { passive: false })
 document.addEventListener('gesturestart',  e => e.preventDefault(), { passive: false });
 document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
 document.addEventListener('gestureend',    e => e.preventDefault(), { passive: false });
+document.addEventListener('DOMContentLoaded', () => {
+  loadLeaderboard();
+});
 
 
   // --- Assets ---
@@ -162,6 +165,27 @@ document.addEventListener('gestureend',    e => e.preventDefault(), { passive: f
     requestAnimationFrame(loop);
   }
 
+  function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderLeaderboard(list){
+  const wrap = document.getElementById('leaderboard-rows');
+  if (!wrap) return; // container missing
+  if (!Array.isArray(list) || list.length === 0){
+    wrap.innerHTML = `<div style="opacity:.8">No scores yet.</div>`;
+    return;
+  }
+  wrap.innerHTML = list.map((r, i) => `
+    <div class="row">
+      <span class="rank">${i+1}.</span>
+      <span class="name">${escapeHtml(r.name ?? 'Player')}</span>
+      <span class="score">${Number(r.score ?? 0)}</span>
+    </div>
+  `).join('');
+}
+
+
   async function postScore(deviceId, score, playMs) {
     try {
       const res = await fetch('/.netlify/functions/submit-score', {
@@ -185,12 +209,12 @@ document.addEventListener('gestureend',    e => e.preventDefault(), { passive: f
   try {
     const res = await fetch('/.netlify/functions/get-leaderboard?limit=10');
     const { scores } = await res.json();
-    // TODO: render your UI here:
-    // renderLeaderboard(scores || []);
+    renderLeaderboard(scores || []);
   } catch (e) {
     console.warn('leaderboard fetch error', e);
   }
 }
+
   function ensureDeviceId() {
   let id = localStorage.getItem('deviceId');
   if (!id) {
