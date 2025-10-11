@@ -51,7 +51,7 @@
   const PIPE_GAP     = () => Math.round(160 * S);    // px
   const PIPE_INTERVAL = 1500;                        // ms (keep time constant)
   const PIPE_WIDTH   = () => Math.round(70  * S);    // px
-  const FLOOR_HEIGHT = () => Math.round(90  * S);    // px
+  const FLOOR_HEIGHT = () => 0;
   const BIRD_W       = () => Math.round(100 * S);
   const BIRD_H       = () => Math.round(100 * S);
   const BIRD_R       = () => Math.round(Math.min(BIRD_W(), BIRD_H()) * 0.20);
@@ -186,19 +186,14 @@
 
   // ===== Pipes (spires) =====
   function spawnPipePair() {
-    const marginTop = Math.round(40 * S);
-    const marginBot = Math.round(40 * S) + FLOOR_HEIGHT();
-    const maxTop = H() - marginBot - PIPE_GAP() - marginTop;
-    const topY = marginTop + Math.random() * Math.max(40 * S, maxTop);
-    const x = W() + 40 * S;
-    pipes.push({
-      x,
-      topH: topY,
-      gapY: topY + PIPE_GAP(),
-      scored: false,
-      seed: Math.random(),
-    });
-  }
+  const marginTop = Math.round(40 * S);
+  const marginBot = Math.round(40 * S);              // was 40*S + FLOOR_HEIGHT()
+  const maxTop = H() - marginBot - PIPE_GAP() - marginTop;
+  const topY = marginTop + Math.random() * Math.max(40 * S, maxTop);
+  const x = W() + 40 * S;
+  pipes.push({ x, topH: topY, gapY: topY + PIPE_GAP(), scored: false, seed: Math.random() });
+}
+
 
   function circleRectOverlap(cx, cy, cr, rx, ry, rw, rh) {
     const nx = Math.max(rx, Math.min(cx, rx + rw));
@@ -229,7 +224,7 @@
     }
 
     // Collision + scoring
-    const floorY = H() - FLOOR_HEIGHT();
+    const floorY = H();   
 
     if (bird.y + bird.r >= floorY || bird.y - bird.r <= 0) {
       return gameOver();
@@ -237,8 +232,7 @@
 
     for (let p of pipes) {
       const topRect = { x: p.x, y: 0, w: PIPE_WIDTH(), h: p.topH };
-      const botRect = { x: p.x, y: p.gapY, w: PIPE_WIDTH(), h: H() - p.gapY - FLOOR_HEIGHT() };
-
+      const botRect = { x: p.x, y: p.gapY, w: PIPE_WIDTH(), h: H() - p.gapY };   // no FLOOR_HEIGHT()
       if (circleRectOverlap(bird.x, bird.y, bird.r, topRect.x, topRect.y, topRect.w, topRect.h) ||
           circleRectOverlap(bird.x, bird.y, bird.r, botRect.x, botRect.y, botRect.w, botRect.h)) {
         return gameOver();
@@ -274,13 +268,11 @@
 
     // Spires (pipes)
     for (let p of pipes) {
-      // top spire (hangs down)
       drawSpireCover(p.x, 0, PIPE_WIDTH(), p.topH, 'down');
-
-      // bottom spire (rises from gap)
-      const bottomH = H() - p.gapY - FLOOR_HEIGHT();
+      const bottomH = H() - p.gapY;                       // was H() - p.gapY - FLOOR_HEIGHT()
       drawSpireCover(p.x, p.gapY, PIPE_WIDTH(), bottomH, 'up');
     }
+
 
     // Bird
     ctx.save();
