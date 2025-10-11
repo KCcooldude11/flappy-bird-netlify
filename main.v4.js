@@ -61,7 +61,7 @@
   const DEVICE_ID = ensureDeviceId();
 
   // Derived sizes/speeds as functions
-  const GRAVITY       = () => 1400 * S;
+  const GRAVITY       = () => 1200 * S;
   const JUMP_VY       = () => -420 * S;
   const PIPE_SPEED    = () => 160  * S;
   const PIPE_GAP      = () => Math.round(160 * S);
@@ -312,7 +312,7 @@
       const jitter = (Math.random() * 0.4 - 0.2) * (maxY - minY); // ±20% of safe gap
       const my = Math.round(centerY + jitter);
 
-      const size = Math.max(22, Math.round(28 * S)); // visual size
+      const size = Math.max(42, Math.round(28 * S)); // visual size
       medallions.push({ x: mx, y: my, size, r: Math.round(size * 0.42), taken: false });
 
       // Next one around every 10 columns with a small random offset (±2)
@@ -386,30 +386,28 @@
   }
 
   function draw() {
-  const w = W(), h = H();
+  // inside draw()
+    const w = W(), h = H();
 
-  // Background (crisp, integer-scaled)
-  if (bgReady) {
-    const scaleX = Math.ceil(w / bg.width);
-    const scaleY = Math.ceil(h / bg.height);
-    const scale  = Math.max(scaleX, scaleY);
+    if (bgReady) {
+      // smooth cover scale (non-integer allowed)
+      const scale = Math.max(w / bg.width, h / bg.height);
+      const dw = bg.width  * scale;
+      const dh = bg.height * scale;
+      const dx = (w - dw) / 2;
+      const dy = (h - dh) / 2;
 
-    const dw = bg.width  * scale;
-    const dh = bg.height * scale;
-    const dx = Math.round((w - dw) / 2);
-    const dy = Math.round((h - dh) / 2);
-
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(bg, dx, dy, dw, dh);
-    ctx.restore();
-  } else {
-    const skyGrad = ctx.createLinearGradient(0,0,0,h);
-    skyGrad.addColorStop(0, '#8fd0ff');
-    skyGrad.addColorStop(1, '#bfe8ff');
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0,0,w,h);
-  }
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high'; // browsers that support it
+      ctx.drawImage(bg, dx, dy, dw, dh);
+      ctx.restore();
+    } else {
+      const g = ctx.createLinearGradient(0,0,0,h);
+      g.addColorStop(0, '#8fd0ff'); g.addColorStop(1, '#bfe8ff');
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,w,h);
+    }
 
   // Spires (pipes)
   for (let p of pipes) {
