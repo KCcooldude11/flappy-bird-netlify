@@ -31,10 +31,63 @@
   let medalReady = false;
   medalImg.onload = () => { medalReady = true; };
 
+  // ===== Skins queue =====
+  // Add more skins by appending entries here with the file names you’ll add later.
+  const SKINS = [
+    { name: 'Apple', idle: './assets/Apple_Fly.png',  flap: './assets/Apple_Regular.png' },
+    { name: 'Comet', idle: './assets/Comet_Fly.png',  flap: './assets/Comet_Regular.png' }, // optional now
+  ];
+
+  // Preload all skins; mark readiness per image
+  for (const s of SKINS) {
+    s.idleImg = new Image();
+    s.flapImg = new Image();
+    s.idleReady = false;
+    s.flapReady = false;
+
+    s.idleImg.onload = () => { s.idleReady = true; };
+    s.flapImg.onload = () => { s.flapReady = true; };
+
+    // If a file is missing, onerror prevents hard breaks; we just won't switch to that skin.
+    s.idleImg.onerror = () => { s.idleReady = false; };
+    s.flapImg.onerror = () => { s.flapReady = false; };
+
+    s.idleImg.src = s.idle;
+    s.flapImg.src = s.flap;
+  }
+
+  const skinReady = (i) => !!(SKINS[i] && SKINS[i].idleReady && SKINS[i].flapReady);
+
+  // Current skin pointers used by draw()
+  let currentSkinIndex = 0;
+  // Fallback to first ready skin at startup
+  for (let i = 0; i < SKINS.length; i++) {
+    if (skinReady(i)) { currentSkinIndex = i; break; }
+  }
+  let currentIdleImg = SKINS[currentSkinIndex].idleImg;
+  let currentFlapImg = SKINS[currentSkinIndex].flapImg;
+
+  function switchToSkin(i) {
+    if (!skinReady(i)) return false;
+    currentSkinIndex = i;
+    currentIdleImg = SKINS[i].idleImg;
+    currentFlapImg = SKINS[i].flapImg;
+    return true;
+  }
+
+  function nextSkin() {
+    // Try the next ready skin; wrap around
+    const start = (currentSkinIndex + 1) % SKINS.length;
+    for (let k = 0; k < SKINS.length; k++) {
+      const idx = (start + k) % SKINS.length;
+      if (switchToSkin(idx)) return true;
+    }
+    return false; // none ready; keep current
+  }
+
   // --- Spire collision tuning ---
   const HIT_INSET_X = () => Math.round(PIPE_WIDTH() * 0.14); // 12–18% works well
   const CAP_INSET_Y = () => Math.round(8 * S);                // soften near the cap edges
-
 
   const BIRD_X = () => Math.round(W() * 0.5); // center screen
 
@@ -109,12 +162,6 @@
     ctx.restore();
   }
 
-  // ===== Bird images =====
-  const birdIdle = new Image();
-  birdIdle.src = './assets/Apple_Fly.png';
-  const birdFlap = new Image();
-  birdFlap.src = './assets/Apple_Regular.png';
-
   // ===== Game state =====
   let state = 'ready'; // ready | playing | gameover
   let bird  = { x: BIRD_X(), y: Math.round(H()/2 - 80 * S), vy: 0, r: BIRD_R(), rot: 0, flapTimer: 0 };
@@ -155,6 +202,13 @@
     medallions = [];
     columnsSpawned = 0;
     nextMedalColumn = 6;
+
+    // ensure a valid skin is selected after resize/restart
+    if (!skinReady(currentSkinIndex)) {
+      for (let i = 0; i < SKINS.length; i++) {
+        if (skinReady(i)) { switchToSkin(i); break; }
+      }
+    }
   }
 
   function start() {
@@ -356,37 +410,36 @@
     }
 
     for (let p of pipes) {
-  // Tightened rectangles (inset horizontally, and soften near the gap)
-  const ix = HIT_INSET_X();
-  const iy = CAP_INSET_Y();
+      // Tightened rectangles (inset horizontally, and soften near the gap)
+      const ix = HIT_INSET_X();
+      const iy = CAP_INSET_Y();
 
-  const topRect = {
-    x: p.x + ix,
-    y: 0,
-    w: Math.max(0, PIPE_WIDTH() - ix * 2),
-    h: Math.max(0, p.topH - iy)               // pull back from the mouth a bit
-  };
+      const topRect = {
+        x: p.x + ix,
+        y: 0,
+        w: Math.max(0, PIPE_WIDTH() - ix * 2),
+        h: Math.max(0, p.topH - iy)
+      };
 
-  const botRect = {
-    x: p.x + ix,
-    y: p.gapY + iy,                           // pull back from the mouth a bit
-    w: Math.max(0, PIPE_WIDTH() - ix * 2),
-    h: Math.max(0, H() - (p.gapY + iy))
-  };
+      const botRect = {
+        x: p.x + ix,
+        y: p.gapY + iy,
+        w: Math.max(0, PIPE_WIDTH() - ix * 2),
+        h: Math.max(0, H() - (p.gapY + iy))
+      };
 
-  if (circleRectOverlap(bird.x, bird.y, bird.r, topRect.x, topRect.y, topRect.w, topRect.h) ||
-      circleRectOverlap(bird.x, bird.y, bird.r, botRect.x, botRect.y, botRect.w, botRect.h)) {
-    return gameOver();
-  }
+      if (circleRectOverlap(bird.x, bird.y, bird.r, topRect.x, topRect.y, topRect.w, topRect.h) ||
+          circleRectOverlap(bird.x, bird.y, bird.r, botRect.x, botRect.y, botRect.w, botRect.h)) {
+        return gameOver();
+      }
 
-  // Scoring stays the same; no need to use inset here.
-  if (!p.scored && p.x + PIPE_WIDTH() < bird.x) {
-    p.scored = true;
-    score += 1;
-    if (scoreEl) scoreEl.textContent = String(score);
-  }
-}
-
+      // Scoring: pass column
+      if (!p.scored && p.x + PIPE_WIDTH() < bird.x) {
+        p.scored = true;
+        score += 1;
+        if (scoreEl) scoreEl.textContent = String(score);
+      }
+    }
 
     // === Medallions: move, collide, cleanup ===
     if (medallions.length) {
@@ -398,8 +451,8 @@
         const dy = bird.y - m.y;
         const rr = (bird.r + m.r);
         if (!m.taken && (dx*dx + dy*dy) < rr*rr) {
-          m.taken = true; // vanish for now
-          // TODO: effects / score / power-up
+          m.taken = true;           // vanish for now
+          nextSkin();               // << switch to next skin on pickup
         }
       }
       // remove taken or offscreen
@@ -408,11 +461,10 @@
   }
 
   function draw() {
-  // inside draw()
     const w = W(), h = H();
 
+    // Background (smooth upscale)
     if (bgReady) {
-      // smooth cover scale (non-integer allowed)
       const scale = Math.max(w / bg.width, h / bg.height);
       const dw = bg.width  * scale;
       const dh = bg.height * scale;
@@ -421,7 +473,7 @@
 
       ctx.save();
       ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high'; // browsers that support it
+      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(bg, dx, dy, dw, dh);
       ctx.restore();
     } else {
@@ -431,35 +483,34 @@
       ctx.fillRect(0,0,w,h);
     }
 
-  // Spires (pipes)
-  for (let p of pipes) {
-    drawSpireStretchV(p.x, 0, PIPE_WIDTH(), p.topH, 'down');
-    const bottomH = h - p.gapY;
-    drawSpireStretchV(p.x, p.gapY, PIPE_WIDTH(), bottomH, 'up');
-  }
+    // Spires (pipes)
+    for (let p of pipes) {
+      drawSpireStretchV(p.x, 0, PIPE_WIDTH(), p.topH, 'down');
+      const bottomH = h - p.gapY;
+      drawSpireStretchV(p.x, p.gapY, PIPE_WIDTH(), bottomH, 'up');
+    }
 
-  // Medallions
-  if (medalReady && medallions.length) {
-    for (let m of medallions) {
-      const s = m.size;
-      ctx.drawImage(medalImg, Math.round(m.x - s/2), Math.round(m.y - s/2), s, s);
+    // Medallions
+    if (medalReady && medallions.length) {
+      for (let m of medallions) {
+        const s = m.size;
+        ctx.drawImage(medalImg, Math.round(m.x - s/2), Math.round(m.y - s/2), s, s);
+      }
+    }
+
+    // Bird using current skin images
+    ctx.save();
+    ctx.translate(bird.x, bird.y);
+    ctx.rotate(bird.rot * 0.45);
+    const img = (bird.flapTimer > 0) ? currentFlapImg : currentIdleImg;
+    ctx.drawImage(img, -BIRD_W()/2, -BIRD_H()/2, BIRD_W(), BIRD_H());
+    ctx.restore();
+
+    if (state === 'ready' && overlay) {
+      overlay.classList.add('show');
+      overlay.classList.remove('hide');
     }
   }
-
-  // Bird
-  ctx.save();
-  ctx.translate(bird.x, bird.y);
-  ctx.rotate(bird.rot * 0.45);
-  const img = (bird.flapTimer > 0) ? birdFlap : birdIdle;
-  ctx.drawImage(img, -BIRD_W()/2, -BIRD_H()/2, BIRD_W(), BIRD_H());
-  ctx.restore();
-
-  if (state === 'ready' && overlay) {
-    overlay.classList.add('show');
-    overlay.classList.remove('hide');
-  }
-}
-
 
   function loop(t) {
     const dt = Math.min(0.033, (t - lastTime) / 1000 || 0);
