@@ -89,7 +89,8 @@
   const HIT_INSET_X = () => Math.round(PIPE_WIDTH() * 0.14); // 12–18% works well
   const CAP_INSET_Y = () => Math.round(8 * S);                // soften near the cap edges
 
-  const BIRD_X = () => Math.round(W() * 0.5); // center screen
+  const START_X_FRAC = 0.28;           // <— was 0.50; move player left
+  const BIRD_X = () => Math.round(W() * START_X_FRAC);
 
   // --- Canvas DPI scaling ---
   const DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
