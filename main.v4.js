@@ -2,7 +2,7 @@
   // ========= Canvas & Context =========
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d', { alpha: true });
-  ctx.imageSmoothingEnabled = false; // crisper pixel art
+  ctx.imageSmoothingEnabled = true;
 
   // Block browser gestures inside the canvas (iOS/Android)
   ['touchstart','touchmove','touchend','touchcancel'].forEach(type => {
@@ -23,27 +23,13 @@
   let bgReady = false;
   bg.onload = () => { bgReady = true; };
 
-  // Pillar sprite (CROPPED: first row is the start of the repeatable tile)
   const spireImg = new Image();
   spireImg.src = './assets/rock_spire.png';
   let spireReady = false;
+  spireImg.onload = () => { spireReady = true; };
 
-  // Set this to the height (in SOURCE pixels) of the repeatable bottom strip
-  const TILE_H_SRC = 12;
-
-  // Computed when image loads
-  const SPRITE = {
-    W: 46,          // will be overwritten by image width
-    CAP_Y: 0,       // where the cap starts in source
-    CAP_H: 0        // cap height in source
-  };
-
-  spireImg.onload = () => {
-    spireReady = true;
-    SPRITE.W   = spireImg.width;
-    SPRITE.CAP_Y = TILE_H_SRC;
-    SPRITE.CAP_H = spireImg.height - TILE_H_SRC;
-  };
+  const birdIdle = new Image();  birdIdle.src = './assets/Apple_Fly.png';
+  const birdFlap = new Image();  birdFlap.src = './assets/Apple_Regular.png';
 
   // ========= Canvas DPI scaling =========
   const DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
@@ -58,6 +44,7 @@
 
   const W = () => (canvas.clientWidth  || canvas.width  / DPR);
   const H = () => (canvas.clientHeight || canvas.height / DPR);
+  const BIRD_X = () => Math.round(W() * 0.5);
 
   // ========= Responsive scaling =========
   const BASE_H = 720;
@@ -68,21 +55,6 @@
   }
   recomputeScale();
 
-  // ========= Identity / Device =========
-  registerIdentityIfNeeded(); // ok to call before declaration (function hoisting)
-  const DEVICE_ID = ensureDeviceId();
-
-  // ========= Tunables =========
-  const GRAVITY       = () => 1400 * S;     // px/s^2
-  const JUMP_VY       = () => -420 * S;     // px/s
-  const PIPE_SPEED    = () => 160 * S;      // px/s
-  const PIPE_GAP      = () => Math.round(160 * S);
-  const PIPE_INTERVAL = 1500;               // ms
-  const PIPE_WIDTH    = () => Math.round(70 * S);
-  const BIRD_W        = () => Math.round(100 * S);
-  const BIRD_H        = () => Math.round(100 * S);
-  const BIRD_R        = () => Math.round(Math.min(BIRD_W(), BIRD_H()) * 0.20);
-
   window.addEventListener('resize', () => {
     resizeCanvas();
     recomputeScale();
@@ -90,95 +62,64 @@
     if (state !== 'playing') bird.y = Math.round(H()/2 - 80 * S);
   });
 
-  // ========= Pillar draw (tile strip + cap) =========
-  // Draws a pillar that rises upward from (x, y) with total height h
-  function drawPillarUp(x, y, w, h) {
-    if (!spireReady || h <= 0) return;
+  // ========= Gameplay tunables =========
+  const GRAVITY       = () => 1400 * S;
+  const JUMP_VY       = () => -420 * S;
+  const PIPE_SPEED    = () => 160  * S;
+  const PIPE_GAP      = () => Math.round(160 * S);
+  const PIPE_INTERVAL = 1500; // ms
+  const PIPE_WIDTH    = () => Math.round(70  * S);
+  const BIRD_W        = () => Math.round(100 * S);
+  const BIRD_H        = () => Math.round(100 * S);
+  const BIRD_R        = () => Math.round(Math.min(BIRD_W(), BIRD_H()) * 0.20);
 
-    const sw = spireImg.width;
-    const scale = w / sw;                 // uniform Y so art keeps aspect
-    const tileH = Math.max(1, Math.round(TILE_H_SRC * scale));
-    const capH  = Math.max(0, Math.round(SPRITE.CAP_H * scale));
-    const yCap  = y + Math.max(0, h - capH);
+  // ========= Stretch+Clip spire drawing =========
+  // Horizontal bleed so edges don’t get cut off by the clip rect
+  const BLEED_FRAC = 0.14; // try 0.12–0.18
+
+  function drawSpireCover(x, y, w, h, orientation='up') {
+    if (!spireReady || h <= 0 || w <= 0) return;
+
+    const iw = spireImg.width, ih = spireImg.height;
+
+    // widen the clip horizontally a bit
+    const bleed = Math.ceil(Math.max(6 * S, w * BLEED_FRAC));
+    const clipX = x - bleed;
+    const clipW = w + bleed * 2;
+
+    // cover-fit the image into the widened clip rect (no distortion)
+    const s  = Math.max(clipW / iw, h / ih);
+    const dw = iw * s, dh = ih * s;
+    const dx = clipX + (clipW - dw) / 2;
 
     ctx.save();
-    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    ctx.beginPath();
+    ctx.rect(clipX, y, clipW, h);
+    ctx.clip();
 
-    // Tile bottom strip upward until just under cap
-    for (let ty = yCap - tileH; ty >= y; ty -= tileH) {
-      ctx.drawImage(spireImg, 0, 0, sw, TILE_H_SRC, x, ty, w, tileH);
-    }
-
-    // Cap once at the top
-    if (capH > 0) {
-      ctx.drawImage(spireImg, 0, SPRITE.CAP_Y, sw, SPRITE.CAP_H, x, yCap, w, capH);
+    if (orientation === 'up') {
+      // pillar that grows upward from bottom: anchor image to bottom
+      const dy = y + h - dh;
+      ctx.drawImage(spireImg, dx, dy, dw, dh);
+    } else {
+      // pillar that hangs down from top: flip vertically and anchor to top
+      ctx.translate(0, y);
+      ctx.scale(1, -1);
+      const dy = -h;
+      ctx.drawImage(spireImg, dx, dy, dw, dh);
     }
 
     ctx.restore();
   }
 
-  // Draws a pillar that hangs downward from (x, y) with total height h
-  function drawPillarDown(x, y, w, h) {
-    if (!spireReady || h <= 0) return;
-    ctx.save();
-    ctx.translate(0, y);
-    ctx.scale(1, -1);
-    drawPillarUp(x, 0, w, h); // reuse logic in flipped space
-    ctx.restore();
-  }
+  // ========= Identity & leaderboard =========
+  registerIdentityIfNeeded();
+  const DEVICE_ID = ensureDeviceId();
 
-  const BIRD_X = () => Math.round(W() * 0.5);
-
-  // ========= Bird assets =========
-  const birdIdle = new Image(); birdIdle.src = './assets/Apple_Fly.png';
-  const birdFlap = new Image(); birdFlap.src = './assets/Apple_Regular.png';
-
-  // ========= Game state =========
-  let state = 'ready'; // ready | playing | gameover
-  let bird  = { x: BIRD_X(), y: Math.round(H()/2 - 80*S), vy: 0, r: BIRD_R(), rot: 0, flapTimer: 0 };
-  let pipes = [];
-  let lastPipeAt = 0;
-  let lastTime = 0;
-  let score = 0;
-  let best = Number(localStorage.getItem('flappy-best') || 0);
-
-  // UI hooks
-  const overlay    = document.getElementById('overlay');
-  const gameoverEl = document.getElementById('gameover');
-  const btnPlay    = document.getElementById('btn-play');
-  const btnTry     = document.getElementById('btn-try');
-  const btnRestart = document.getElementById('btn-restart');
-  const scoreEl    = document.getElementById('score');
-  const bestEl     = document.getElementById('best');
-  if (bestEl) bestEl.textContent = 'Best: ' + best;
-
-  function resetGame() {
-    bird.x = BIRD_X();
-    bird.y = Math.round(H()/2 - 80 * S);
-    bird.vy = 0;
-    bird.rot = 0;
-    bird.flapTimer = 0;
-    bird.r = BIRD_R();
-    pipes = [];
-    lastPipeAt = 0;
-    score = 0;
-    if (scoreEl) scoreEl.textContent = '0';
-  }
-
-  function start() {
-    resetGame();
-    markRunStart();
-    state = 'playing';
-    if (overlay)    { overlay.classList.add('hide');    overlay.classList.remove('show'); }
-    if (gameoverEl) { gameoverEl.classList.add('hide'); gameoverEl.classList.remove('show'); }
-    lastTime = performance.now();
-    requestAnimationFrame(loop);
-  }
-
-  // ========= Leaderboard render =========
-  function escapeHtml(s) {
+  function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
+
   function renderLeaderboard(list){
     const wrap = document.getElementById('leaderboard-rows');
     if (!wrap) return;
@@ -195,7 +136,6 @@
     `).join('');
   }
 
-  // ========= Netlify functions =========
   async function postScore(deviceId, score, playMs) {
     try {
       const res = await fetch('/.netlify/functions/submit-score', {
@@ -225,6 +165,7 @@
     }
     return id;
   }
+
   function getOrAskName() {
     let name = localStorage.getItem('playerName');
     if (!name) {
@@ -233,6 +174,7 @@
     }
     return name;
   }
+
   async function registerIdentityIfNeeded() {
     const deviceId = ensureDeviceId();
     let name = localStorage.getItem('playerName');
@@ -247,26 +189,49 @@
     return { deviceId, name };
   }
 
-  // ========= Game over / scoring =========
-  let runStartTime = 0;
-  function markRunStart(){ runStartTime = performance.now(); }
+  // ========= Game state =========
+  let state = 'ready'; // ready | playing | gameover
+  let bird = { x: BIRD_X(), y: Math.round(H()/2 - 80 * S), vy: 0, r: BIRD_R(), rot: 0, flapTimer: 0 };
+  let pipes = [];
+  let lastPipeAt = 0;
+  let lastTime = 0;
+  let score = 0;
+  let best = Number(localStorage.getItem('flappy-best') || 0);
 
-  async function gameOver() {
-    state = 'gameover';
-    if (score > best) {
-      best = score;
-      localStorage.setItem('flappy-best', String(best));
-      if (bestEl) bestEl.textContent = 'Best: ' + best;
-    }
-    if (gameoverEl) { gameoverEl.classList.remove('hide'); gameoverEl.classList.add('show'); }
+  // UI elements
+  const overlay = document.getElementById('overlay');
+  const gameoverEl = document.getElementById('gameover');
+  const btnPlay = document.getElementById('btn-play');
+  const btnTry = document.getElementById('btn-try');
+  const btnRestart = document.getElementById('btn-restart');
+  const scoreEl = document.getElementById('score');
+  const bestEl = document.getElementById('best');
+  if (bestEl) bestEl.textContent = 'Best: ' + best;
 
-    const playMs = Math.round(performance.now() - runStartTime);
-    const result = await postScore(DEVICE_ID, score, playMs);
-    if (result?.error) console.warn('submit-score error:', result.error);
-    await loadLeaderboard();
+  function resetGame() {
+    bird.x = BIRD_X();
+    bird.y = Math.round(H()/2 - 80 * S);
+    bird.vy = 0;
+    bird.rot = 0;
+    bird.flapTimer = 0;
+    bird.r = BIRD_R();
+    pipes = [];
+    lastPipeAt = 0;
+    score = 0;
+    if (scoreEl) scoreEl.textContent = '0';
   }
 
-  // ========= Input =========
+  function start() {
+    resetGame();
+    markRunStart();
+    state = 'playing';
+    if (overlay)   { overlay.classList.add('hide');   overlay.classList.remove('show'); }
+    if (gameoverEl){ gameoverEl.classList.add('hide'); gameoverEl.classList.remove('show'); }
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+  }
+
+  // ========= Inputs =========
   function flap() {
     if (state === 'ready') start();
     if (state !== 'playing') return;
@@ -295,7 +260,7 @@
     if (state === 'playing' || state === 'gameover') start();
   });
 
-  // ========= Pipes (spawn & physics) =========
+  // ========= Pipes =========
   function spawnPipePair() {
     const marginTop = Math.round(40 * S);
     const marginBot = Math.round(40 * S);
@@ -313,6 +278,26 @@
     return (dx*dx + dy*dy) < cr*cr;
   }
 
+  // ========= Game over / scoring =========
+  let runStartTime = 0;
+  function markRunStart(){ runStartTime = performance.now(); }
+
+  async function gameOver() {
+    state = 'gameover';
+    if (score > best) {
+      best = score;
+      localStorage.setItem('flappy-best', String(best));
+      if (bestEl) bestEl.textContent = 'Best: ' + best;
+    }
+    if (gameoverEl) { gameoverEl.classList.remove('hide'); gameoverEl.classList.add('show'); }
+
+    const playMs = Math.round(performance.now() - runStartTime);
+    const result = await postScore(DEVICE_ID, score, playMs);
+    if (result?.error) console.warn('submit-score error:', result.error);
+    await loadLeaderboard();
+  }
+
+  // ========= Update =========
   function update(dt) {
     if (state !== 'playing') return;
 
@@ -326,19 +311,19 @@
     if (lastPipeAt <= 0) { spawnPipePair(); lastPipeAt = PIPE_INTERVAL; }
     else { lastPipeAt -= dt*1000; }
 
-    for (let p of pipes) { p.x -= PIPE_SPEED() * dt; }
+    for (let p of pipes) p.x -= PIPE_SPEED() * dt;
     while (pipes.length && pipes[0].x + PIPE_WIDTH() < -40 * S) pipes.shift();
 
     // Collision + scoring
     const floorY = H();
     if (bird.y + bird.r >= floorY || bird.y - bird.r <= 0) return gameOver();
 
-    // Slightly inset hitboxes to ignore any visual bleed
-    const hitInset = Math.round(PIPE_WIDTH() * 0.08);
+    // inset hitboxes so the visual bleed doesn't unfairly collide
+    const hitInset = Math.ceil(Math.max(2 * S, PIPE_WIDTH() * (BLEED_FRAC * 0.6)));
 
     for (let p of pipes) {
-      const topRect = { x: p.x + hitInset, y: 0, w: PIPE_WIDTH() - hitInset*2, h: p.topH };
-      const botRect = { x: p.x + hitInset, y: p.gapY, w: PIPE_WIDTH() - hitInset*2, h: H() - p.gapY };
+      const topRect = { x: p.x + hitInset, y: 0,       w: PIPE_WIDTH() - hitInset*2, h: p.topH };
+      const botRect = { x: p.x + hitInset, y: p.gapY,  w: PIPE_WIDTH() - hitInset*2, h: H() - p.gapY };
 
       if (circleRectOverlap(bird.x, bird.y, bird.r, topRect.x, topRect.y, topRect.w, topRect.h) ||
           circleRectOverlap(bird.x, bird.y, bird.r, botRect.x, botRect.y, botRect.w, botRect.h)) {
@@ -357,7 +342,7 @@
   function draw() {
     const w = W(), h = H();
 
-    // Background (cover, no distortion)
+    // Background
     if (bgReady) {
       const scale = Math.max(w / bg.width, h / bg.height);
       const dw = bg.width * scale;
@@ -373,14 +358,14 @@
       ctx.fillRect(0,0,w,h);
     }
 
-    // Pipes using tiling
+    // Spires (stretch+clip)
     for (let p of pipes) {
-      // top (hanging) pillar
-      drawPillarDown(p.x, 0, PIPE_WIDTH(), p.topH);
+      // top (hanging) spire
+      drawSpireCover(p.x, 0, PIPE_WIDTH(), p.topH, 'down');
 
-      // bottom (rising) pillar
+      // bottom (rising) spire
       const bottomH = H() - p.gapY;
-      drawPillarUp(p.x, p.gapY, PIPE_WIDTH(), bottomH);
+      drawSpireCover(p.x, p.gapY, PIPE_WIDTH(), bottomH, 'up');
     }
 
     // Bird
