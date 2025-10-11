@@ -32,15 +32,19 @@ document.addEventListener('DOMContentLoaded', () => {
   W: 46,        // source image width in pixels (set to your PNG's width)
   MID_Y: 0,     // where the repeating strip starts (0 since you cropped the dark rim)
   MID_H: 12,    // height of the repeating tile band (try 12; adjust by taste)
-  TOP_H: 20,    // decorative cap at the *top* of the source image
-  BOT_H: 24     // decorative cap at the *bottom* of the source image
+  TOP_H: 12,    // decorative cap at the *top* of the source image
+  BOT_H: 0     // decorative cap at the *bottom* of the source image
 };
+
+
 const spireImg = new Image();
 spireImg.src = './assets/rock_spire.png';
 let spireReady = false;
 spireImg.onload = () => {
   spireReady = true;
-  SPRITE.W = spireImg.width; // <- make sure widths match the actual PNG
+  SPRITE.W = spireImg.width;
+  SPRITE.CAP_Y = SPRITE.MID_Y + SPRITE.MID_H;
+  SPRITE.CAP_H = spireImg.height - SPRITE.MID_H;
 };
 
   // --- Canvas DPI scaling ---
@@ -99,88 +103,59 @@ spireImg.onload = () => {
   // Spire drawing (cover + clip, with a small horizontal bleed so edges aren't cut)
 const BLEED_FRAC = 0.14; // try 0.12–0.18
 
-function drawSpireTiledUp(x, y, w, h) {
+function drawBottomSpire(x, y, w, h) {
   if (!spireReady || h <= 0) return;
   const g = ctx;
-  const sx = w / SPRITE.W;
 
-  const topH = SPRITE.TOP_H * sx;
-  const botH = SPRITE.BOT_H * sx;
-  const tileH = SPRITE.MID_H * sx;
+  const sx = w / SPRITE.W;           // horizontal scale (keeps proportions)
+  const tileH = SPRITE.MID_H * sx;   // how tall each repeated piece is on screen
+  const capH  = SPRITE.CAP_H * sx;   // how tall the top cap is on screen
 
   g.save();
   g.beginPath(); g.rect(x, y, w, h); g.clip();
 
-  if (h <= topH + botH) {
-    // Too short: just draw both caps clipped
-    g.drawImage(spireImg, 0, 0, SPRITE.W, SPRITE.TOP_H, x, y, w, topH);
-    g.drawImage(spireImg, 0, spireImg.height - SPRITE.BOT_H, SPRITE.W, SPRITE.BOT_H,
-                x, y + h - botH, w, botH);
-    g.restore();
-    return;
-  }
-
-  // bottom cap
-  let yCursor = y + h - botH;
-  g.drawImage(spireImg, 0, spireImg.height - SPRITE.BOT_H, SPRITE.W, SPRITE.BOT_H,
-              x, yCursor, w, botH);
-
-  // middle tiles upward
-  yCursor -= tileH;
-  while (yCursor > y + topH) {
-    g.drawImage(spireImg, 0, SPRITE.MID_Y, SPRITE.W, SPRITE.MID_H,
-                x, yCursor, w, tileH);
+  // Fill upward from the bottom with the mid tile
+  let yCursor = y + h;
+  while (yCursor - tileH > y + capH) {
     yCursor -= tileH;
+    g.drawImage(spireImg, 0, SPRITE.MID_Y, SPRITE.W, SPRITE.MID_H,
+                x, yCursor, w, tileH);
   }
 
-  // top cap
-  g.drawImage(spireImg, 0, 0, SPRITE.W, SPRITE.TOP_H,
-              x, y, w, topH);
+  // Draw the cap once at the very top
+  g.drawImage(spireImg, 0, SPRITE.CAP_Y, SPRITE.W, SPRITE.CAP_H,
+              x, y, w, capH);
 
   g.restore();
 }
 
-function drawSpireTiledDown(x, y, w, h) {
+function drawTopSpire(x, y, w, h) {
   if (!spireReady || h <= 0) return;
   const g = ctx;
-  const sx = w / SPRITE.W;
 
-  const topH = SPRITE.TOP_H * sx;
-  const botH = SPRITE.BOT_H * sx;
+  const sx = w / SPRITE.W;
   const tileH = SPRITE.MID_H * sx;
+  const capH  = SPRITE.CAP_H * sx;
 
   g.save();
   g.beginPath(); g.rect(x, y, w, h); g.clip();
-  g.translate(0, y);
-  g.scale(1, -1);
 
-  if (h <= topH + botH) {
-    // Too short: draw caps clipped in flipped space
-    g.drawImage(spireImg, 0, 0, SPRITE.W, SPRITE.TOP_H, x, -h, w, topH);
-    g.drawImage(spireImg, 0, spireImg.height - SPRITE.BOT_H, SPRITE.W, SPRITE.BOT_H,
-                x, -botH, w, botH);
-    g.restore();
-    return;
-  }
+  // For the ceiling spire: cap sits near the gap (bottom of this rect)
+  g.drawImage(spireImg, 0, SPRITE.CAP_Y, SPRITE.W, SPRITE.CAP_H,
+              x, y + h - capH, w, capH);
 
-  // (flipped) top cap (now bottom)
-  let yCursor = -h;
-  g.drawImage(spireImg, 0, 0, SPRITE.W, SPRITE.TOP_H, x, yCursor, w, topH);
-
-  // middle tiles downward
-  yCursor += topH;
-  while (yCursor + tileH < -botH) {
+  // Fill upward (toward the top of the rect) with repeated mid tiles
+  let yCursor = y + h - capH;
+  while (yCursor - tileH > y) {
+    yCursor -= tileH;
     g.drawImage(spireImg, 0, SPRITE.MID_Y, SPRITE.W, SPRITE.MID_H,
                 x, yCursor, w, tileH);
-    yCursor += tileH;
   }
-
-  // (flipped) bottom cap
-  g.drawImage(spireImg, 0, spireImg.height - SPRITE.BOT_H, SPRITE.W, SPRITE.BOT_H,
-              x, -botH, w, botH);
 
   g.restore();
 }
+
+
 const BIRD_X = () => Math.round(W() * 0.5);
 
   // ===== Bird images =====
@@ -469,11 +444,11 @@ async function registerIdentityIfNeeded() {
 
     // Spires (pipes)
     for (let p of pipes) {
-  drawSpireTiledDown(p.x, 0, PIPE_WIDTH(), p.topH);
+      drawTopSpire(p.x, 0, PIPE_WIDTH(), p.topH);
 
-// BOTTOM spire (rises up)
-const bottomH = H() - p.gapY;
-drawSpireTiledUp(p.x, p.gapY, PIPE_WIDTH(), bottomH);
+  // BOTTOM spire (rises up)
+  const bottomH = H() - p.gapY;
+  drawBottomSpire(p.x, p.gapY, PIPE_WIDTH(), bottomH);
 }
 
     // Bird
