@@ -93,36 +93,29 @@ document.addEventListener('DOMContentLoaded', () => {
   // Spire drawing (cover + clip, with a small horizontal bleed so edges aren't cut)
 const BLEED_FRAC = 0.14; // try 0.12–0.18
 
-function drawSpireCover(x, y, w, h, orientation='up') {
-  if (!spireReady) return;
+function drawSpireStretchV(x, y, w, h, orientation = 'up') {
+  if (!spireReady || w <= 0 || h <= 0) return;
 
-  // bleed scales with width and keeps a small minimum
-  const bleed = Math.ceil(Math.max(6 * S, w * BLEED_FRAC));
-
-  const iw = spireImg.width, ih = spireImg.height;
-  const clipX = x - bleed;            // wider clip horizontally
-  const clipW = w + bleed * 2;
-
-  // cover the widened clip rect
-  const s  = Math.max(clipW / iw, h / ih);
-  const dw = iw * s, dh = ih * s;
-  const dx = clipX + (clipW - dw) / 2;
+  // (Optional) tighten up AA and avoid half-pixel fuzz
+  const dx = Math.round(x);
+  const dy = Math.round(y);
+  const dw = Math.round(w);
+  const dh = Math.round(h);
 
   ctx.save();
-  ctx.beginPath();
-  ctx.rect(clipX, y, clipW, h);       // <- wider clip so edges aren’t cut
-  ctx.clip();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
 
   if (orientation === 'up') {
-    const dy = y + h - dh;            // anchor bottom
-    ctx.drawImage(spireImg, dx, dy, dw, dh);
+    // draw image stretched into the rect
+    ctx.drawImage(spireImg, 0, 0, spireImg.width, spireImg.height, dx, dy, dw, dh);
   } else {
-    ctx.translate(0, y);
+    // flip vertically so it “hangs” down
+    ctx.translate(0, dy + dh);
     ctx.scale(1, -1);
-    const dy = -h;                    // anchor top in flipped space
-    ctx.drawImage(spireImg, dx, dy, dw, dh);
+    ctx.drawImage(spireImg, 0, 0, spireImg.width, spireImg.height, dx, 0, dw, dh);
   }
-  ctx.restore();
+   ctx.restore();
 }
 
 
@@ -412,11 +405,13 @@ async function registerIdentityIfNeeded() {
 
     // Spires (pipes)
     for (let p of pipes) {
-      drawSpireCover(p.x, 0, PIPE_WIDTH(), p.topH, 'down');
-      const bottomH = H() - p.gapY;                       // was H() - p.gapY - FLOOR_HEIGHT()
-      drawSpireCover(p.x, p.gapY, PIPE_WIDTH(), bottomH, 'up');
-    }
+  // top spire
+  drawSpireStretchV(p.x, 0, PIPE_WIDTH(), p.topH, 'down');
 
+  // bottom spire
+  const bottomH = H() - p.gapY;
+  drawSpireStretchV(p.x, p.gapY, PIPE_WIDTH(), bottomH, 'up');
+}
 
     // Bird
     ctx.save();
