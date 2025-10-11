@@ -31,6 +31,11 @@
   let medalReady = false;
   medalImg.onload = () => { medalReady = true; };
 
+  // --- Spire collision tuning ---
+  const HIT_INSET_X = () => Math.round(PIPE_WIDTH() * 0.14); // 12–18% works well
+  const CAP_INSET_Y = () => Math.round(8 * S);                // soften near the cap edges
+
+
   const BIRD_X = () => Math.round(W() * 0.5); // center screen
 
   // --- Canvas DPI scaling ---
@@ -312,7 +317,7 @@
       const jitter = (Math.random() * 0.4 - 0.2) * (maxY - minY); // ±20% of safe gap
       const my = Math.round(centerY + jitter);
 
-      const size = Math.max(42, Math.round(28 * S)); // visual size
+      const size = Math.max(80, Math.round(28 * S)); // visual size
       medallions.push({ x: mx, y: my, size, r: Math.round(size * 0.42), taken: false });
 
       // Next one around every 10 columns with a small random offset (±2)
@@ -351,20 +356,37 @@
     }
 
     for (let p of pipes) {
-      const topRect = { x: p.x, y: 0, w: PIPE_WIDTH(), h: p.topH };
-      const botRect = { x: p.x, y: p.gapY, w: PIPE_WIDTH(), h: H() - p.gapY };
-      if (circleRectOverlap(bird.x, bird.y, bird.r, topRect.x, topRect.y, topRect.w, topRect.h) ||
-          circleRectOverlap(bird.x, bird.y, bird.r, botRect.x, botRect.y, botRect.w, botRect.h)) {
-        return gameOver();
-      }
+  // Tightened rectangles (inset horizontally, and soften near the gap)
+  const ix = HIT_INSET_X();
+  const iy = CAP_INSET_Y();
 
-      // Score when you pass a column
-      if (!p.scored && p.x + PIPE_WIDTH() < bird.x) {
-        p.scored = true;
-        score += 1;
-        if (scoreEl) scoreEl.textContent = String(score);
-      }
-    }
+  const topRect = {
+    x: p.x + ix,
+    y: 0,
+    w: Math.max(0, PIPE_WIDTH() - ix * 2),
+    h: Math.max(0, p.topH - iy)               // pull back from the mouth a bit
+  };
+
+  const botRect = {
+    x: p.x + ix,
+    y: p.gapY + iy,                           // pull back from the mouth a bit
+    w: Math.max(0, PIPE_WIDTH() - ix * 2),
+    h: Math.max(0, H() - (p.gapY + iy))
+  };
+
+  if (circleRectOverlap(bird.x, bird.y, bird.r, topRect.x, topRect.y, topRect.w, topRect.h) ||
+      circleRectOverlap(bird.x, bird.y, bird.r, botRect.x, botRect.y, botRect.w, botRect.h)) {
+    return gameOver();
+  }
+
+  // Scoring stays the same; no need to use inset here.
+  if (!p.scored && p.x + PIPE_WIDTH() < bird.x) {
+    p.scored = true;
+    score += 1;
+    if (scoreEl) scoreEl.textContent = String(score);
+  }
+}
+
 
     // === Medallions: move, collide, cleanup ===
     if (medallions.length) {
