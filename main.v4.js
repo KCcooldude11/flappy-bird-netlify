@@ -4,46 +4,34 @@
   const ctx = canvas.getContext('2d');
 
   // Block browser gestures inside the canvas (iOS/Android)
-// NOTE: passive:false is required to allow preventDefault().
-['touchstart','touchmove','touchend','touchcancel'].forEach(type => {
-  canvas.addEventListener(type, e => e.preventDefault(), { passive: false });
-});
-
-// Some browsers still emit dblclick from double-tap; block it.
-canvas.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
-
-// Older iOS Safari fires these "gesture*" events on pinch; block them too.
-document.addEventListener('gesturestart',  e => e.preventDefault(), { passive: false });
-document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
-document.addEventListener('gestureend',    e => e.preventDefault(), { passive: false });
-document.addEventListener('DOMContentLoaded', () => {
-  loadLeaderboard();
-});
-
+  ['touchstart','touchmove','touchend','touchcancel'].forEach(type => {
+    canvas.addEventListener(type, e => e.preventDefault(), { passive: false });
+  });
+  canvas.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+  document.addEventListener('gesturestart',  e => e.preventDefault(), { passive: false });
+  document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
+  document.addEventListener('gestureend',    e => e.preventDefault(), { passive: false });
+  document.addEventListener('DOMContentLoaded', () => { loadLeaderboard(); });
 
   // --- Assets ---
-  // Background image (load once)
   const bg = new Image();
-  bg.src = './assets/Untitled_Artwork.png'; // change if you rename it
+  bg.src = './assets/Untitled_Artwork.png';
   let bgReady = false;
   bg.onload = () => { bgReady = true; };
 
-  const SPRITE = {
-  W: 46,        // source image width in pixels (set to your PNG's width)
-  MID_Y: 0,     // where the repeating strip starts (0 since you cropped the dark rim)
-  MID_H: 12,    // height of the repeating tile band (try 12; adjust by taste)
-  TOP_H: 20,    // decorative cap at the *top* of the source image
-  BOT_H: 24     // decorative cap at the *bottom* of the source image
-}
-
-  // Rock spire image (one tall asset)
+  // Spire art (stretched vertically only)
   const spireImg = new Image();
   spireImg.src = './assets/rock_spire.png';
   let spireReady = false;
   spireImg.onload = () => { spireReady = true; };
 
-  const BIRD_X = () => Math.round(W() * 0.5); // center screen
+  // Medallion art
+  const medalImg = new Image();
+  medalImg.src = './assets/medallion.png';
+  let medalReady = false;
+  medalImg.onload = () => { medalReady = true; };
 
+  const BIRD_X = () => Math.round(W() * 0.5); // center screen
 
   // --- Canvas DPI scaling ---
   const DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
@@ -61,9 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const H = () => (canvas.clientHeight || canvas.height / DPR);
 
   // ===== Responsive scaling =====
-  // Tune BASE_H to change overall difficulty/feel globally.
-  const BASE_H = 720;         // "design" height we based the old numbers on
-  let S = 1;                  // global scale factor
+  const BASE_H = 720;
+  let S = 1;
   function recomputeScale() {
     S = H() / BASE_H;
     if (!Number.isFinite(S) || S <= 0) S = 1;
@@ -71,61 +58,51 @@ document.addEventListener('DOMContentLoaded', () => {
   recomputeScale();
 
   registerIdentityIfNeeded();
-
   const DEVICE_ID = ensureDeviceId();
 
-  // Derived sizes/speeds as functions (so they update when S changes)
-  const GRAVITY      = () => 1400 * S;               // px/s^2
-  const JUMP_VY      = () => -420 * S;               // px/s
-  const PIPE_SPEED   = () => 160  * S;               // px/s
-  const PIPE_GAP     = () => Math.round(160 * S);    // px
-  const PIPE_INTERVAL = 1500;                        // ms (keep time constant)
-  const PIPE_WIDTH   = () => Math.round(70  * S);    // px
-  const FLOOR_HEIGHT = () => 0;
-  const BIRD_W       = () => Math.round(100 * S);
-  const BIRD_H       = () => Math.round(100 * S);
-  const BIRD_R       = () => Math.round(Math.min(BIRD_W(), BIRD_H()) * 0.20);
+  // Derived sizes/speeds as functions
+  const GRAVITY       = () => 1400 * S;
+  const JUMP_VY       = () => -420 * S;
+  const PIPE_SPEED    = () => 160  * S;
+  const PIPE_GAP      = () => Math.round(160 * S);
+  const PIPE_INTERVAL = 1500;                 // ms
+  const PIPE_WIDTH    = () => Math.round(70 * S);
+  const BIRD_W        = () => Math.round(100 * S);
+  const BIRD_H        = () => Math.round(100 * S);
+  const BIRD_R        = () => Math.round(Math.min(BIRD_W(), BIRD_H()) * 0.20);
 
   // Recompute scale + canvas on resize
   window.addEventListener('resize', () => {
-  resizeCanvas();
-  recomputeScale();
-  bird.x = BIRD_X();                        // recenter on resize
-  if (state !== 'playing') {
-    bird.y = Math.round(H()/2 - 80 * S);   // recenter vertically when not playing
+    resizeCanvas();
+    recomputeScale();
+    bird.x = BIRD_X();                        // recenter on resize
+    if (state !== 'playing') {
+      bird.y = Math.round(H()/2 - 80 * S);   // recenter vertically when not playing
+    }
+  });
+
+  // ===== Spire drawing (stretch vertically only) =====
+  function drawSpireStretchV(x, y, w, h, orientation = 'up') {
+    if (!spireReady || w <= 0 || h <= 0) return;
+
+    const dx = Math.round(x);
+    const dy = Math.round(y);
+    const dw = Math.round(w);
+    const dh = Math.round(h);
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    if (orientation === 'up') {
+      ctx.drawImage(spireImg, 0, 0, spireImg.width, spireImg.height, dx, dy, dw, dh);
+    } else { // 'down' (flip vertically)
+      ctx.translate(0, dy + dh);
+      ctx.scale(1, -1);
+      ctx.drawImage(spireImg, 0, 0, spireImg.width, spireImg.height, dx, 0, dw, dh);
+    }
+    ctx.restore();
   }
-  // If you prefer to restart mid-game on resize, you can call start() here instead.
-});
-
-  // ===== Spire drawing (cover + clip, no tiling) =====
-  // Spire drawing (cover + clip, with a small horizontal bleed so edges aren't cut)
-const BLEED_FRAC = 0.14; // try 0.12–0.18
-
-function drawSpireStretchV(x, y, w, h, orientation = 'up') {
-  if (!spireReady || w <= 0 || h <= 0) return;
-
-  // (Optional) tighten up AA and avoid half-pixel fuzz
-  const dx = Math.round(x);
-  const dy = Math.round(y);
-  const dw = Math.round(w);
-  const dh = Math.round(h);
-
-  ctx.save();
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-
-  if (orientation === 'up') {
-    // draw image stretched into the rect
-    ctx.drawImage(spireImg, 0, 0, spireImg.width, spireImg.height, dx, dy, dw, dh);
-  } else {
-    // flip vertically so it “hangs” down
-    ctx.translate(0, dy + dh);
-    ctx.scale(1, -1);
-    ctx.drawImage(spireImg, 0, 0, spireImg.width, spireImg.height, dx, 0, dw, dh);
-  }
-   ctx.restore();
-}
-
 
   // ===== Bird images =====
   const birdIdle = new Image();
@@ -135,40 +112,49 @@ function drawSpireStretchV(x, y, w, h, orientation = 'up') {
 
   // ===== Game state =====
   let state = 'ready'; // ready | playing | gameover
-  let bird = { x: BIRD_X(), y: Math.round(H()/2 - 80 * S), vy: 0, r: BIRD_R(), rot: 0, flapTimer: 0 };
+  let bird  = { x: BIRD_X(), y: Math.round(H()/2 - 80 * S), vy: 0, r: BIRD_R(), rot: 0, flapTimer: 0 };
   let pipes = [];
   let lastPipeAt = 0;
   let lastTime = 0;
   let score = 0;
-  let best = Number(localStorage.getItem('flappy-best') || 0);
+  let best  = Number(localStorage.getItem('flappy-best') || 0);
+
+  // Medallions
+  let medallions = [];         // {x, y, size, r, taken}
+  let medalPending = false;    // schedule spawn at the NEXT pipe spawn (so we can place between columns)
+  let nextMedalAt  = 5;        // first at 5, then ~every 10 (±2)
 
   // UI elements
-  const overlay = document.getElementById('overlay');
-  const gameoverEl = document.getElementById('gameover');
-  const btnPlay = document.getElementById('btn-play');
-  const btnTry = document.getElementById('btn-try');
-  const btnRestart = document.getElementById('btn-restart');
-  const scoreEl = document.getElementById('score');
-  const bestEl = document.getElementById('best');
+  const overlay   = document.getElementById('overlay');
+  const gameoverEl= document.getElementById('gameover');
+  const btnPlay   = document.getElementById('btn-play');
+  const btnTry    = document.getElementById('btn-try');
+  const btnRestart= document.getElementById('btn-restart');
+  const scoreEl   = document.getElementById('score');
+  const bestEl    = document.getElementById('best');
   if (bestEl) bestEl.textContent = 'Best: ' + best;
 
   function resetGame() {
-  bird.x = BIRD_X();                        // center
-  bird.y = Math.round(H()/2 - 80 * S);
-  bird.vy = 0;
-  bird.rot = 0;
-  bird.flapTimer = 0;
-  bird.r = BIRD_R();
-  pipes = [];
-  lastPipeAt = 0;
-  score = 0;
-  if (scoreEl) scoreEl.textContent = '0';
-}
+    bird.x = BIRD_X();
+    bird.y = Math.round(H()/2 - 80 * S);
+    bird.vy = 0;
+    bird.rot = 0;
+    bird.flapTimer = 0;
+    bird.r = BIRD_R();
+    pipes = [];
+    lastPipeAt = 0;
+    score = 0;
+    if (scoreEl) scoreEl.textContent = '0';
 
+    // pickups
+    medallions = [];
+    medalPending = false;
+    nextMedalAt = 5;
+  }
 
   function start() {
     resetGame();
-    markRunStart(); 
+    markRunStart();
     state = 'playing';
     if (overlay)   { overlay.classList.add('hide');   overlay.classList.remove('show'); }
     if (gameoverEl){ gameoverEl.classList.add('hide'); gameoverEl.classList.remove('show'); }
@@ -177,27 +163,24 @@ function drawSpireStretchV(x, y, w, h, orientation = 'up') {
   }
 
   function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-function renderLeaderboard(list){
-  const wrap = document.getElementById('leaderboard-rows');
-  console.log('renderLeaderboard rows:', list?.length, wrap);
-  if (!wrap) return;
-  if (!Array.isArray(list) || list.length === 0){
-    wrap.innerHTML = `<div style="opacity:.8">No scores yet.</div>`;
-    return;
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
-  wrap.innerHTML = list.map((r, i) => `
-    <div class="row">
-      <span class="rank">${i+1}.</span>
-      <span class="name">${escapeHtml(r.name ?? 'Player')}</span>
-      <span class="score">${Number(r.score ?? 0)}</span>
-    </div>
-  `).join('');
-}
 
-
+  function renderLeaderboard(list){
+    const wrap = document.getElementById('leaderboard-rows');
+    if (!wrap) return;
+    if (!Array.isArray(list) || list.length === 0){
+      wrap.innerHTML = `<div style="opacity:.8">No scores yet.</div>`;
+      return;
+    }
+    wrap.innerHTML = list.map((r, i) => `
+      <div class="row">
+        <span class="rank">${i+1}.</span>
+        <span class="name">${escapeHtml(r.name ?? 'Player')}</span>
+        <span class="score">${Number(r.score ?? 0)}</span>
+      </div>
+    `).join('');
+  }
 
   async function postScore(deviceId, score, playMs) {
     try {
@@ -210,79 +193,64 @@ function renderLeaderboard(list){
     } catch (e) { return { error: e.message }; }
   }
 
-
   let runStartTime = 0;
-
-  // call this inside start()
-  function markRunStart() {
-    runStartTime = performance.now();
-  }
+  function markRunStart() { runStartTime = performance.now(); }
 
   async function loadLeaderboard() {
-  try {
-    const res = await fetch('/.netlify/functions/get-leaderboard?limit=10');
-    const { scores } = await res.json();
-    renderLeaderboard(scores || []);
-  } catch (e) {
-    console.warn('leaderboard fetch error', e);
+    try {
+      const res = await fetch('/.netlify/functions/get-leaderboard?limit=10');
+      const { scores } = await res.json();
+      renderLeaderboard(scores || []);
+    } catch (e) {
+      console.warn('leaderboard fetch error', e);
+    }
   }
-}
 
   function ensureDeviceId() {
-  let id = localStorage.getItem('deviceId');
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem('deviceId', id);
+    let id = localStorage.getItem('deviceId');
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem('deviceId', id);
+    }
+    return id;
   }
-  return id;
-}
-
-function getOrAskName() {
-  let name = localStorage.getItem('playerName');
-  if (!name) {
-    name = (prompt('Choose a username (max 16):') || 'Guest').slice(0,16).trim();
-    localStorage.setItem('playerName', name);
+  function getOrAskName() {
+    let name = localStorage.getItem('playerName');
+    if (!name) {
+      name = (prompt('Choose a username (max 16):') || 'Guest').slice(0,16).trim();
+      localStorage.setItem('playerName', name);
+    }
+    return name;
   }
-  return name;
-}
-
-async function registerIdentityIfNeeded() {
-  const deviceId = ensureDeviceId();
-  let name = localStorage.getItem('playerName');
-  if (!name) name = getOrAskName();
-
-  // Tell the server once (or whenever name changes)
-  try {
-    await fetch('/.netlify/functions/register-identity', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ deviceId, name })
-    });
-  } catch {}
-  return { deviceId, name };
-}
-
-
-
- async function gameOver() {
-  state = 'gameover';
-  if (score > best) {
-    best = score;
-    localStorage.setItem('flappy-best', String(best));
-    if (bestEl) bestEl.textContent = 'Best: ' + best;
+  async function registerIdentityIfNeeded() {
+    const deviceId = ensureDeviceId();
+    let name = localStorage.getItem('playerName');
+    if (!name) name = getOrAskName();
+    try {
+      await fetch('/.netlify/functions/register-identity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId, name })
+      });
+    } catch {}
+    return { deviceId, name };
   }
-  if (gameoverEl) { gameoverEl.classList.remove('hide'); gameoverEl.classList.add('show'); }
 
-  // No more name prompt — name was registered already and is tied to DEVICE_ID
-  const playMs = Math.round(performance.now() - runStartTime);
+  async function gameOver() {
+    state = 'gameover';
+    if (score > best) {
+      best = score;
+      localStorage.setItem('flappy-best', String(best));
+      if (bestEl) bestEl.textContent = 'Best: ' + best;
+    }
+    if (gameoverEl) { gameoverEl.classList.remove('hide'); gameoverEl.classList.add('show'); }
 
-  const result = await postScore(DEVICE_ID, score, playMs);
-  if (result?.error) console.warn('submit-score error:', result.error);
+    const playMs = Math.round(performance.now() - runStartTime);
+    const result = await postScore(DEVICE_ID, score, playMs);
+    if (result?.error) console.warn('submit-score error:', result.error);
 
-  await loadLeaderboard();
-}
-
-
+    await loadLeaderboard();
+  }
 
   function flap() {
     if (state === 'ready') start();
@@ -301,7 +269,6 @@ async function registerIdentityIfNeeded() {
       start();
     }
   });
-
   let pointerDown = false;
   function onTap() {
     if (state === 'gameover') start();
@@ -318,14 +285,32 @@ async function registerIdentityIfNeeded() {
 
   // ===== Pipes (spires) =====
   function spawnPipePair() {
-  const marginTop = Math.round(40 * S);
-  const marginBot = Math.round(40 * S);              // was 40*S + FLOOR_HEIGHT()
-  const maxTop = H() - marginBot - PIPE_GAP() - marginTop;
-  const topY = marginTop + Math.random() * Math.max(40 * S, maxTop);
-  const x = W() + 40 * S;
-  pipes.push({ x, topH: topY, gapY: topY + PIPE_GAP(), scored: false, seed: Math.random() });
-}
+    const marginTop = Math.round(40 * S);
+    const marginBot = Math.round(40 * S);
+    const maxTop = H() - marginBot - PIPE_GAP() - marginTop;
+    const topY = marginTop + Math.random() * Math.max(40 * S, maxTop);
+    const x = W() + 40 * S;
 
+    // capture previous column so we can place medallion between columns
+    const prev = pipes[pipes.length - 1];
+
+    const p = { x, topH: topY, gapY: topY + PIPE_GAP(), scored: false, seed: Math.random() };
+    pipes.push(p);
+
+    // If a medallion is pending and we have a previous column,
+    // spawn it halfway between prev.x and this x, vertically centered in prev gap.
+    if (medalPending && prev && medalReady) {
+      const mx = Math.round((prev.x + x) / 2);
+      const my = Math.round(prev.gapY - PIPE_GAP()/2);
+
+      const size = Math.max(22, Math.round(28 * S)); // visual size
+      medallions.push({ x: mx, y: my, size, r: Math.round(size * 0.42), taken: false });
+
+      medalPending = false;
+      // schedule next target: ~ every 10, with ±2 random fuzz
+      nextMedalAt += 10 + (Math.floor(Math.random()*5) - 2);
+    }
+  }
 
   function circleRectOverlap(cx, cy, cr, rx, ry, rw, rh) {
     const nx = Math.max(rx, Math.min(cx, rx + rw));
@@ -342,7 +327,6 @@ async function registerIdentityIfNeeded() {
     bird.vy += GRAVITY() * dt;
     bird.y  += bird.vy * dt;
     bird.rot = Math.atan2(bird.vy, 300);
-
     if (bird.flapTimer > 0) bird.flapTimer -= dt*1000;
 
     // Pipes
@@ -350,51 +334,58 @@ async function registerIdentityIfNeeded() {
     else { lastPipeAt -= dt*1000; }
 
     for (let p of pipes) { p.x -= PIPE_SPEED() * dt; }
-
-    while (pipes.length && pipes[0].x + PIPE_WIDTH() < -40 * S) {
-      pipes.shift();
-    }
+    while (pipes.length && pipes[0].x + PIPE_WIDTH() < -40 * S) pipes.shift();
 
     // Collision + scoring
-    const floorY = H();   
-
+    const floorY = H();
     if (bird.y + bird.r >= floorY || bird.y - bird.r <= 0) {
       return gameOver();
     }
 
-     const hitInset = Math.ceil(Math.max(2 * S, PIPE_WIDTH() * (BLEED_FRAC * 0.6)));
-
-
     for (let p of pipes) {
-       const topRect = {
-      x: p.x + hitInset,
-      y: 0,
-      w: PIPE_WIDTH() - hitInset * 2,
-      h: p.topH
-    };
-    const botRect = {
-      x: p.x + hitInset,
-      y: p.gapY,
-      w: PIPE_WIDTH() - hitInset * 2,
-      h: H() - p.gapY
-    };
+      const topRect = { x: p.x, y: 0, w: PIPE_WIDTH(), h: p.topH };
+      const botRect = { x: p.x, y: p.gapY, w: PIPE_WIDTH(), h: H() - p.gapY };
       if (circleRectOverlap(bird.x, bird.y, bird.r, topRect.x, topRect.y, topRect.w, topRect.h) ||
           circleRectOverlap(bird.x, bird.y, bird.r, botRect.x, botRect.y, botRect.w, botRect.h)) {
         return gameOver();
       }
 
+      // Score when you pass a column
       if (!p.scored && p.x + PIPE_WIDTH() < bird.x) {
         p.scored = true;
         score += 1;
         if (scoreEl) scoreEl.textContent = String(score);
+
+        // schedule a medallion when reaching threshold
+        if (!medalPending && score >= nextMedalAt) {
+          medalPending = true; // will place at next spawnPipePair()
+        }
       }
+    }
+
+    // === Medallions: move, collide, cleanup ===
+    if (medallions.length) {
+      for (let m of medallions) {
+        m.x -= PIPE_SPEED() * dt; // scroll with world
+
+        // circle-circle collision
+        const dx = bird.x - m.x;
+        const dy = bird.y - m.y;
+        const rr = (bird.r + m.r);
+        if (!m.taken && (dx*dx + dy*dy) < rr*rr) {
+          m.taken = true; // vanish for now
+          // (future: add effects / score / power-up here)
+        }
+      }
+      // remove taken or offscreen
+      medallions = medallions.filter(m => !m.taken && (m.x + m.size) > -40*S);
     }
   }
 
   function draw() {
     const w = W(), h = H();
 
-    // Background (cover, no distortion)
+    // Background
     if (bgReady) {
       const scale = Math.max(w / bg.width, h / bg.height);
       const dw = bg.width * scale;
@@ -403,7 +394,6 @@ async function registerIdentityIfNeeded() {
       const dy = (h - dh) / 2;
       ctx.drawImage(bg, dx, dy, dw, dh);
     } else {
-      // fallback gradient
       const skyGrad = ctx.createLinearGradient(0,0,0,h);
       skyGrad.addColorStop(0, '#8fd0ff');
       skyGrad.addColorStop(1, '#bfe8ff');
@@ -413,13 +403,20 @@ async function registerIdentityIfNeeded() {
 
     // Spires (pipes)
     for (let p of pipes) {
-  // top spire
-  drawSpireStretchV(p.x, 0, PIPE_WIDTH(), p.topH, 'down');
+      // top spire
+      drawSpireStretchV(p.x, 0, PIPE_WIDTH(), p.topH, 'down');
+      // bottom spire
+      const bottomH = H() - p.gapY;
+      drawSpireStretchV(p.x, p.gapY, PIPE_WIDTH(), bottomH, 'up');
+    }
 
-  // bottom spire
-  const bottomH = H() - p.gapY;
-  drawSpireStretchV(p.x, p.gapY, PIPE_WIDTH(), bottomH, 'up');
-}
+    // Medallions
+    if (medalReady && medallions.length) {
+      for (let m of medallions) {
+        const s = m.size;
+        ctx.drawImage(medalImg, Math.round(m.x - s/2), Math.round(m.y - s/2), s, s);
+      }
+    }
 
     // Bird
     ctx.save();
