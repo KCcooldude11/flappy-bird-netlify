@@ -317,7 +317,7 @@
       const jitter = (Math.random() * 0.4 - 0.2) * (maxY - minY); // ±20% of safe gap
       const my = Math.round(centerY + jitter);
 
-      const size = Math.max(80, Math.round(28 * S)); // visual size
+      const size = Math.max(68, Math.round(28 * S)); // visual size
       medallions.push({ x: mx, y: my, size, r: Math.round(size * 0.42), taken: false });
 
       // Next one around every 10 columns with a small random offset (±2)
