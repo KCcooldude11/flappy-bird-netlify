@@ -275,7 +275,7 @@ async function registerIdentityIfNeeded() {
     if (state === 'ready') start();
     if (state !== 'playing') return;
     bird.vy = JUMP_VY();
-    bird.flapTimer = 450;
+    bird.flapTimer = 300;
   }
 
   // Inputs
