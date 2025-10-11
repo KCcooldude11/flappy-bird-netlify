@@ -119,10 +119,10 @@
   let score = 0;
   let best  = Number(localStorage.getItem('flappy-best') || 0);
 
-  // Medallions
-  let medallions = [];         // {x, y, size, r, taken}
-  let columnsSpawned = 0;
-  let nextMedalAt  = 5;        // first at 5, then ~every 10 (±2)
+  // Medallions (column-based scheduling)
+  let medallions = [];          // {x, y, size, r, taken}
+  let columnsSpawned = 0;       // how many columns we've spawned
+  let nextMedalColumn = 6;      // first medal between column 5 and 6
 
   // UI elements
   const overlay   = document.getElementById('overlay');
@@ -146,10 +146,10 @@
     score = 0;
     if (scoreEl) scoreEl.textContent = '0';
 
-    // pickups
+    // pickups reset
     medallions = [];
-    medalPending = false;
-    nextMedalAt = 5;
+    columnsSpawned = 0;
+    nextMedalColumn = 6;
   }
 
   function start() {
@@ -283,36 +283,42 @@
     if (state === 'playing' || state === 'gameover') start();
   });
 
+  // ===== Pipes (spires) + medallion spawn by column index =====
   function spawnPipePair() {
-  const marginTop = Math.round(40 * S);
-  const marginBot = Math.round(40 * S);
-  const maxTop = H() - marginBot - PIPE_GAP() - marginTop;
-  const topY = marginTop + Math.random() * Math.max(40 * S, maxTop);
-  const x = W() + 40 * S;
+    const marginTop = Math.round(40 * S);
+    const marginBot = Math.round(40 * S);
+    const maxTop = H() - marginBot - PIPE_GAP() - marginTop;
+    const topY = marginTop + Math.random() * Math.max(40 * S, maxTop);
+    const x = W() + 40 * S;
 
-  const prev = pipes[pipes.length - 1];
-  const p = { x, topH: topY, gapY: topY + PIPE_GAP(), scored: false, seed: Math.random() };
-  pipes.push(p);
+    const prev = pipes[pipes.length - 1];
+    const p = { x, topH: topY, gapY: topY + PIPE_GAP(), scored: false, seed: Math.random() };
+    pipes.push(p);
 
-  // increment column count *after* pushing the new one
-  columnsSpawned++;
+    // Column counter
+    columnsSpawned++;
 
-  // Drop a medallion exactly between the previous and current column
-  // when we hit the target column number.
-  if (columnsSpawned === nextMedalColumn && prev && medalReady) {
-    const mx = Math.round((prev.x + x) / 2);
+    // Place a medallion between the previous and current column at specific indices
+    if (columnsSpawned === nextMedalColumn && prev) {
+      const mx = Math.round((prev.x + x) / 2);
 
-    // vertically: center in the *previous* column's gap (safe from pillars)
-    const my = Math.round(prev.gapY - PIPE_GAP()/2);
+      // Safe vertical inside previous gap, with a bit of jitter
+      const gapTop = prev.topH;
+      const gapBot = prev.gapY;
+      const safeMargin = Math.round(0.2 * PIPE_GAP()); // keep away from caps
+      const minY = gapTop + safeMargin;
+      const maxY = gapBot - safeMargin;
+      const centerY = (minY + maxY) / 2;
+      const jitter = (Math.random() * 0.4 - 0.2) * (maxY - minY); // ±20% of safe gap
+      const my = Math.round(centerY + jitter);
 
-    const size = Math.max(22, Math.round(28 * S)); // visual size
-    medallions.push({ x: mx, y: my, size, r: Math.round(size * 0.42), taken: false });
+      const size = Math.max(22, Math.round(28 * S)); // visual size
+      medallions.push({ x: mx, y: my, size, r: Math.round(size * 0.42), taken: false });
 
-    // schedule the next one about every 10 columns (±2)
-    nextMedalColumn += 10 + (Math.floor(Math.random() * 5) - 2);
+      // Next one around every 10 columns with a small random offset (±2)
+      nextMedalColumn += 10 + (Math.floor(Math.random() * 5) - 2);
+    }
   }
-}
-
 
   function circleRectOverlap(cx, cy, cr, rx, ry, rw, rh) {
     const nx = Math.max(rx, Math.min(cx, rx + rw));
@@ -357,11 +363,6 @@
         p.scored = true;
         score += 1;
         if (scoreEl) scoreEl.textContent = String(score);
-
-        // schedule a medallion when reaching threshold
-        if (!medalPending && score >= nextMedalAt) {
-          medalPending = true; // will place at next spawnPipePair()
-        }
       }
     }
 
@@ -376,7 +377,7 @@
         const rr = (bird.r + m.r);
         if (!m.taken && (dx*dx + dy*dy) < rr*rr) {
           m.taken = true; // vanish for now
-          // (future: add effects / score / power-up here)
+          // TODO: effects / score / power-up
         }
       }
       // remove taken or offscreen
