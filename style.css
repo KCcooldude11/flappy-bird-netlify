@@ -69,43 +69,59 @@ kbd { background: #111; color: #fff; border-radius: 6px; padding: 2px 6px; }
   #game { width: 360px; height: 600px; }
 }
 
-/* Game Over panel ensures children are centered and readable */
+/* Make overlay panels sit above the canvas */
+#overlay,
 #gameover {
-  display: flex;
-  flex-direction: column;
+  position: absolute;
+  inset: 0;
+  z-index: 5;            /* ensure over canvas */
+  display: none;         /* controlled by .show/.hide below */
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  pointer-events: none;  /* panel container doesn't catch clicks */
+}
+
+/* your JS toggles these */
+.show { display: flex !important; }
+.hide { display: none !important; }
+
+/* Content inside the panel can receive clicks */
+#gameover > * { pointer-events: auto; }
+
+/* Layout the game-over content vertically */
+#gameover {
+  flex-direction: column;
+  gap: 14px;
 }
 
 /* Leaderboard block */
 .leaderboard {
-  width: min(90vw, 320px);
-  max-height: 50vh;
+  width: min(90vw, 340px);
+  max-height: 55vh;
   overflow: auto;
-  background: rgba(255,255,255,.9);
+  background: rgba(255,255,255,.92);
   backdrop-filter: blur(8px);
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.15);
+  box-shadow: 0 10px 30px rgba(0,0,0,.18);
   padding: 10px 12px;
 }
 
-.lb-title {
-  font-weight: 700;
-  text-align: center;
+/* Optional header row */
+.lb-head.row {
+  font-weight: 600;
+  opacity: .7;
   margin-bottom: 6px;
 }
 
-/* rows layout matches your renderLeaderboard() output */
+/* Rows rendered by renderLeaderboard() */
 .row {
   display: grid;
-  grid-template-columns: 28px 1fr 64px;
+  grid-template-columns: 28px 1fr 66px;
   gap: 8px;
-  padding: 6px 4px;
+  padding: 6px 6px;
   font-size: 14px;
 }
-.lb-head { font-weight: 600; opacity: .7; }
 .row:nth-child(odd) { background: rgba(0,0,0,.04); border-radius: 6px; }
-.rank { text-align: right; opacity: .7; }
-.name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank  { text-align: right; opacity: .7; }
+.name  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .score { text-align: right; font-variant-numeric: tabular-nums; }
-

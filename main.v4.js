@@ -171,7 +171,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function renderLeaderboard(list){
   const wrap = document.getElementById('leaderboard-rows');
-  if (!wrap) return; // container missing
+  console.log('renderLeaderboard rows:', list?.length, wrap);
+  if (!wrap) return;
   if (!Array.isArray(list) || list.length === 0){
     wrap.innerHTML = `<div style="opacity:.8">No scores yet.</div>`;
     return;
@@ -184,6 +185,7 @@ function renderLeaderboard(list){
     </div>
   `).join('');
 }
+
 
 
   async function postScore(deviceId, score, playMs) {
