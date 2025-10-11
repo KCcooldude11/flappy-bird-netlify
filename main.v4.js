@@ -16,6 +16,9 @@
   let spireReady = false;
   spireImg.onload = () => { spireReady = true; };
 
+  const BIRD_X = () => Math.round(W() * 0.5); // center screen
+
+
   // --- Canvas DPI scaling ---
   const DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
   function resizeCanvas() {
@@ -55,11 +58,14 @@
 
   // Recompute scale + canvas on resize
   window.addEventListener('resize', () => {
-    resizeCanvas();
-    recomputeScale();
-    // Optionally: restart a running game to avoid weird mid-flight resizes:
-    // if (state === 'playing') start();
-  });
+  resizeCanvas();
+  recomputeScale();
+  bird.x = BIRD_X();                        // recenter on resize
+  if (state !== 'playing') {
+    bird.y = Math.round(H()/2 - 80 * S);   // recenter vertically when not playing
+  }
+  // If you prefer to restart mid-game on resize, you can call start() here instead.
+});
 
   // ===== Spire drawing (cover + clip, no tiling) =====
   function drawSpireCover(x, y, w, h, orientation='up') {
@@ -96,7 +102,7 @@
 
   // ===== Game state =====
   let state = 'ready'; // ready | playing | gameover
-  let bird = { x: Math.round(120 * S), y: Math.round(H()/2 - 80 * S), vy: 0, r: BIRD_R(), rot: 0, flapTimer: 0 };
+  let bird = { x: BIRD_X(), y: Math.round(H()/2 - 80 * S), vy: 0, r: BIRD_R(), rot: 0, flapTimer: 0 };
   let pipes = [];
   let lastPipeAt = 0;
   let lastTime = 0;
@@ -114,17 +120,18 @@
   if (bestEl) bestEl.textContent = 'Best: ' + best;
 
   function resetGame() {
-    bird.x = Math.round(120 * S);
-    bird.y = Math.round(H()/2 - 80 * S);
-    bird.vy = 0;
-    bird.rot = 0;
-    bird.flapTimer = 0;
-    bird.r = BIRD_R();
-    pipes = [];
-    lastPipeAt = 0;
-    score = 0;
-    if (scoreEl) scoreEl.textContent = '0';
-  }
+  bird.x = BIRD_X();                        // center
+  bird.y = Math.round(H()/2 - 80 * S);
+  bird.vy = 0;
+  bird.rot = 0;
+  bird.flapTimer = 0;
+  bird.r = BIRD_R();
+  pipes = [];
+  lastPipeAt = 0;
+  score = 0;
+  if (scoreEl) scoreEl.textContent = '0';
+}
+
 
   function start() {
     resetGame();
