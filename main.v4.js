@@ -101,92 +101,31 @@ document.addEventListener('DOMContentLoaded', () => {
   // Spire drawing (cover + clip, with a small horizontal bleed so edges aren't cut)
 const BLEED_FRAC = 0.14; // try 0.12–0.18
 
-function drawSpireTiledUp(x, y, w, h) {
-  if (!spireReady) return;
-  const g = ctx;
+function drawSpireStretchV(x, y, w, h, orientation = 'up') {
+  if (!spireReady || w <= 0 || h <= 0) return;
 
-  // scale in X only if your game pipe width differs from art width
-  const sx = w / SPRITE.W;
+  // (Optional) tighten up AA and avoid half-pixel fuzz
+  const dx = Math.round(x);
+  const dy = Math.round(y);
+  const dw = Math.round(w);
+  const dh = Math.round(h);
 
-  g.save();
-  g.beginPath(); g.rect(x, y, w, h); g.clip();
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
 
-  // 1) bottom cap
-  const botH = SPRITE.BOT_H * sx;             // keep pixel-perfect in X; allow X scale
-  let yCursor = y + h - botH;
-  g.drawImage(
-    spireImg,
-    0, spireImg.height - SPRITE.BOT_H, SPRITE.W, SPRITE.BOT_H,
-    x, yCursor, w, botH
-  );
-
-  // 2) tile middle upward
-  const tileH = SPRITE.MID_H * sx;
-  yCursor -= tileH;
-  while (yCursor > y + SPRITE.TOP_H * sx) {
-    g.drawImage(
-      spireImg,
-      0, SPRITE.MID_Y, SPRITE.W, SPRITE.MID_H,
-      x, yCursor, w, tileH
-    );
-    yCursor -= tileH;
+  if (orientation === 'up') {
+    // draw image stretched into the rect
+    ctx.drawImage(spireImg, 0, 0, spireImg.width, spireImg.height, dx, dy, dw, dh);
+  } else {
+    // flip vertically so it “hangs” down
+    ctx.translate(0, dy + dh);
+    ctx.scale(1, -1);
+    ctx.drawImage(spireImg, 0, 0, spireImg.width, spireImg.height, dx, 0, dw, dh);
   }
-
-  // 3) top cap (flush with clip top)
-  const topH = SPRITE.TOP_H * sx;
-  g.drawImage(
-    spireImg,
-    0, 0, SPRITE.W, SPRITE.TOP_H,
-    x, y, w, topH
-  );
-
-  g.restore();
+   ctx.restore();
 }
 
-// draw a top (downward) spire by tiling the same band, flipped vertically
-function drawSpireTiledDown(x, y, w, h) {
-  if (!spireReady) return;
-  const g = ctx;
-  const sx = w / SPRITE.W;
-
-  g.save();
-  g.beginPath(); g.rect(x, y, w, h); g.clip();
-
-  // draw in flipped space
-  g.translate(0, y);
-  g.scale(1, -1);
-
-  // 1) top cap (now acts as the “bottom” after flip)
-  const topH = SPRITE.TOP_H * sx;
-  let yCursor = -h;
-  g.drawImage(
-    spireImg,
-    0, 0, SPRITE.W, SPRITE.TOP_H,
-    x, yCursor, w, topH
-  );
-
-  // 2) tile middle downward
-  yCursor += topH;
-  const tileH = SPRITE.MID_H * sx;
-  while (yCursor + tileH < 0 - SPRITE.BOT_H * sx) {
-    g.drawImage(
-      spireImg,
-      0, SPRITE.MID_Y, SPRITE.W, SPRITE.MID_H,
-      x, yCursor, w, tileH
-    );
-    yCursor += tileH;
-  }
-
-  // 3) bottom cap (from bottom of source)
-  const botH = SPRITE.BOT_H * sx;
-  g.drawImage(
-    spireImg,
-    0, spireImg.height - SPRITE.BOT_H, SPRITE.W, SPRITE.BOT_H,
-    x, -botH, w, botH
-  );
-
-  g.restore();
-}
 
   // ===== Bird images =====
   const birdIdle = new Image();
