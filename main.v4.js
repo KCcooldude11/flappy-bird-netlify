@@ -121,7 +121,7 @@
 
   // Medallions
   let medallions = [];         // {x, y, size, r, taken}
-  let medalPending = false;    // schedule spawn at the NEXT pipe spawn (so we can place between columns)
+  let columnsSpawned = 0;
   let nextMedalAt  = 5;        // first at 5, then ~every 10 (±2)
 
   // UI elements
@@ -283,34 +283,36 @@
     if (state === 'playing' || state === 'gameover') start();
   });
 
-  // ===== Pipes (spires) =====
   function spawnPipePair() {
-    const marginTop = Math.round(40 * S);
-    const marginBot = Math.round(40 * S);
-    const maxTop = H() - marginBot - PIPE_GAP() - marginTop;
-    const topY = marginTop + Math.random() * Math.max(40 * S, maxTop);
-    const x = W() + 40 * S;
+  const marginTop = Math.round(40 * S);
+  const marginBot = Math.round(40 * S);
+  const maxTop = H() - marginBot - PIPE_GAP() - marginTop;
+  const topY = marginTop + Math.random() * Math.max(40 * S, maxTop);
+  const x = W() + 40 * S;
 
-    // capture previous column so we can place medallion between columns
-    const prev = pipes[pipes.length - 1];
+  const prev = pipes[pipes.length - 1];
+  const p = { x, topH: topY, gapY: topY + PIPE_GAP(), scored: false, seed: Math.random() };
+  pipes.push(p);
 
-    const p = { x, topH: topY, gapY: topY + PIPE_GAP(), scored: false, seed: Math.random() };
-    pipes.push(p);
+  // increment column count *after* pushing the new one
+  columnsSpawned++;
 
-    // If a medallion is pending and we have a previous column,
-    // spawn it halfway between prev.x and this x, vertically centered in prev gap.
-    if (medalPending && prev && medalReady) {
-      const mx = Math.round((prev.x + x) / 2);
-      const my = Math.round(prev.gapY - PIPE_GAP()/2);
+  // Drop a medallion exactly between the previous and current column
+  // when we hit the target column number.
+  if (columnsSpawned === nextMedalColumn && prev && medalReady) {
+    const mx = Math.round((prev.x + x) / 2);
 
-      const size = Math.max(22, Math.round(28 * S)); // visual size
-      medallions.push({ x: mx, y: my, size, r: Math.round(size * 0.42), taken: false });
+    // vertically: center in the *previous* column's gap (safe from pillars)
+    const my = Math.round(prev.gapY - PIPE_GAP()/2);
 
-      medalPending = false;
-      // schedule next target: ~ every 10, with ±2 random fuzz
-      nextMedalAt += 10 + (Math.floor(Math.random()*5) - 2);
-    }
+    const size = Math.max(22, Math.round(28 * S)); // visual size
+    medallions.push({ x: mx, y: my, size, r: Math.round(size * 0.42), taken: false });
+
+    // schedule the next one about every 10 columns (±2)
+    nextMedalColumn += 10 + (Math.floor(Math.random() * 5) - 2);
   }
+}
+
 
   function circleRectOverlap(cx, cy, cr, rx, ry, rw, rh) {
     const nx = Math.max(rx, Math.min(cx, rx + rw));
