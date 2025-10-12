@@ -21,6 +21,7 @@
   const scoreEl    = document.getElementById('score');
   const bestEl     = document.getElementById('best');
   const goSkin = document.getElementById('gameover-skin');
+  const BLUR_PX = 6;
 
     // Ensure #score has an inner span we can rotate back upright
   const scoreTextEl = (() => {
@@ -539,13 +540,22 @@ nextSkinRespectTheoLock(); }
   const vw = W(), vh = H();
 
   // Background
-  if (bgReady){
+
+  if (bgReady) {
+    const vw = W(), vh = H();
+
+    // same scale math as before
     const scale = Math.max(vw / bg.width, vh / bg.height);
-    const dw = bg.width * scale, dh = bg.height * scale;
-    const dx = (vw - dw)/2, dy = (vh - dh)/2;
+    const pad = BLUR_PX * 2; // expand so blur won’t clip
+    const dw = bg.width * scale + pad * 2;
+    const dh = bg.height * scale + pad * 2;
+    const dx = (vw - dw) / 2 - pad;
+    const dy = (vh - dh) / 2 - pad;
+
     ctx.save();
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
+    ctx.filter = `blur(${BLUR_PX}px)`;   // ← blur only the background
     ctx.drawImage(bg, dx, dy, dw, dh);
     ctx.restore();
   } else {
