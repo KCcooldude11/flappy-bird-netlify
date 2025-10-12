@@ -39,12 +39,24 @@
   updateScoreBadge(Number(scoreTextEl?.textContent || 0));
 
 
-  function updateScoreBadge(val) {
-    const digits = String(val).length;
-    // Base size fits 1–2 digits; grow ~14px per extra digit
-    const size = (digits <= 2) ? 44 : 44 + (digits - 2) * 14;
-    scoreEl?.style.setProperty('--score-size', `${size}px`);
+function updateScoreBadge(val){
+  const digits = String(val).length;
+
+  // Base (fits 1–2 digits)
+  let w = 28;   // half-width
+  let h = 44;   // half-height
+
+  // Grow for 3+ digits (keeps it narrow & tall)
+  if (digits > 2){
+    const extra = (digits - 2) * 10;  // tweak if you want more/less growth
+    w += extra;                       // widen a bit for extra digits
+    h += Math.round(extra * 1.2);     // grow height a touch more
   }
+
+  scoreEl?.style.setProperty('--w', `${w}px`);
+  scoreEl?.style.setProperty('--h', `${h}px`);
+}
+
 
   // Max vertical move of the gap *center* between consecutive columns
   const MAX_CENTER_DELTA = () => Math.round(0.99 * PIPE_GAP()); // ~65% of gap per column (tweak)

@@ -98,30 +98,44 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 #hud .center { pointer-events: none; }
 
 #score{
-  --score-size: 56px;    /* JS adjusts this when digits grow */
-  --ratioX: 0.82;        /* skinnier */
-  --ratioY: 1.28;        /* taller */
+  /* base dimensions of half-width and half-height of the diamond */
+  --w: 28px;         /* half of width  (skinny)  */
+  --h: 44px;         /* half of height (tall)    */
 
   position: relative;
-  width:  calc(var(--score-size) * var(--ratioX));
-  height: calc(var(--score-size) * var(--ratioY));
-  background: #f9c44a;
-  border-radius: 14px;   /* soft corners */
-  box-shadow: 0 6px 14px rgba(0,0,0,.18);
-  transform: rotate(45deg);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
+  width: 0;
+  height: 0;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,.18));
 }
 
-/* keep the number upright */
+/* top triangle */
+#score::before,
+#score::after{
+  content:"";
+  position:absolute;
+  left: calc(-1 * var(--w));
+  border-left:  var(--w) solid transparent;
+  border-right: var(--w) solid transparent;
+}
+#score::before{
+  border-bottom: var(--h) solid #f9c44a;   /* top half */
+}
+/* bottom triangle */
+#score::after{
+  top: var(--h);
+  border-top: var(--h) solid #f9c44a;      /* bottom half */
+}
+
+/* number centered, upright */
 #score .txt{
-  transform: rotate(-45deg);
-  line-height: 1;
-  font-size: calc(var(--score-size) * 0.50);
+  position:absolute;
+  left:  calc(-1 * var(--w));         /* center over total width (2w) */
+  width: calc(2 * var(--w));
+  top:   var(--h);                    /* middle in vertical axis */
+  transform: translateY(-50%);        /* exact center vertically */
   text-align: center;
-  min-width: 1ch;
+  line-height: 1;
+  font-size: calc(var(--h) * 0.75);   /* scales with height */
 }
 
 #best {
