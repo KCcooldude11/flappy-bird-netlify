@@ -314,15 +314,22 @@ refreshNameUI();
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
   function renderLeaderboard(list){
-    const wrap = document.getElementById('leaderboard-rows'); if (!wrap) return;
-    if (!Array.isArray(list) || list.length === 0){ wrap.innerHTML = `<div style="opacity:.8">No scores yet.</div>`; return; }
-    wrap.innerHTML = list.map((r,i)=>`
-      <div class="row">
-        <span class="rank">${i+1}.</span>
-        <span class="name">${escapeHtml(r.name ?? 'Player')}</span>
-        <span class="score">${Number(r.score ?? 0)}</span>
-      </div>`).join('');
+  const wrap = document.getElementById('leaderboard-rows'); 
+  if (!wrap) return;
+  if (!Array.isArray(list) || list.length === 0){
+    wrap.innerHTML = `<div style="opacity:.8">No scores yet.</div>`;
+    return;
   }
+  wrap.innerHTML = list.map((r,i)=>`
+    <div class="row">
+      <span class="rank">
+        <span class="rank-badge" aria-hidden="true"></span>
+        <span class="rank-num">${i+1}</span>
+      </span>
+      <span class="name">${escapeHtml(r.name ?? 'Player')}</span>
+      <span class="score">${Number(r.score ?? 0)}</span>
+    </div>`).join('');
+}
   async function postScore(deviceId, score, playMs){
     try {
       const res = await fetch('/.netlify/functions/submit-score', {

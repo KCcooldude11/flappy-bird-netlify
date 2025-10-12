@@ -318,6 +318,49 @@ kbd {
   image-rendering: auto;       /* or 'pixelated' if you like the chunky look */
 }
 
+.rank {
+  position: relative;
+  display: inline-block;
+  width: 30px; 
+  height: 20px;
+  text-align: center;
+}
+
+.rank-badge {
+  /* half-width & half-height of the diamond */
+  --rw: 8px;   /* horizontal half-width (keeps it small) */
+  --rh: 12px;  /* vertical half-height */
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 0; height: 0;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,.18));
+  z-index: 0;
+}
+.rank-badge::before,
+.rank-badge::after {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--rw));
+  border-left:  var(--rw) solid transparent;
+  border-right: var(--rw) solid transparent;
+}
+.rank-badge::before { border-bottom: var(--rh) solid #f9c44a; }
+.rank-badge::after  { top: var(--rh); border-top: var(--rh) solid #f9c44a; }
+
+/* Rank number on top of the badge */
+.rank-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  font-size: 12px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
 .row:nth-child(odd) { background: rgba(0,0,0,.04); border-radius: 6px; }
 .rank  { text-align: right; opacity: .7; }
 .name  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
