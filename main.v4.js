@@ -38,6 +38,12 @@
   segTile.onload = () => segReady.tile = true;
   segCap.onload  = () => segReady.cap  = true;
 
+
+  function nextMedalJump() {
+    // returns an integer in [13, 20]
+    return 13 + Math.floor(Math.random() * 8);
+  }
+
   // Medallion
   const medalImg = new Image(); medalImg.src = './assets/medallion.png';
   let medalReady = false; medalImg.onload = () => medalReady = true;
@@ -393,7 +399,7 @@
     const my = Math.round(centerY + jitter);
     const size = Math.max(68, Math.round(28*S));
     medallions.push({ x:mx, y:my, size, r:Math.round(size*0.42), taken:false });
-    nextMedalColumn += 10 + (Math.floor(Math.random()*5) - 2);
+    nextMedalColumn += nextMedalJump();
   }
 }
 
