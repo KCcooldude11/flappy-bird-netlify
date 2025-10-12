@@ -41,9 +41,10 @@
 
   // ===== Skins queue (pickup cycles to next) =====
   const SKINS = [
-    { name:'Apple', idle:'./assets/Apple_Fly.png',  flap:'./assets/Apple_Regular.png' },
-    { name:'Comet', idle:'./assets/Comet_Fly.png',  flap:'./assets/Comet_Regular.png' }, // add when ready
-  ];
+  { name:'Apple', idle:'./assets/Apple_Fly.png',  flap:'./assets/Apple_Regular.png' },
+  { name:'Comet', idle:'./assets/Comet_Fly.png',  flap:'./assets/Comet_Regular.png' },
+  { name:'Theo',  idle:'./assets/Theo_Fly.png',   flap:'./assets/Theo_Regular.png' },
+];
   for (const s of SKINS) {
     s.idleImg = new Image(); s.flapImg = new Image();
     s.idleReady = false; s.flapReady = false;
@@ -136,7 +137,7 @@
     return n * tileH + capH;
   }
 
-  function drawStackUp(x, y, w, h) {
+    function drawStackUp(x, y, w, h, capNudgeY = 0) {
     const { tileH, capH, sx } = scaledHeightsF();
     if (!segReady.tile || tileH <= 0 || w <= 0 || h <= 0) return;
 
@@ -298,7 +299,6 @@
   btnPlay?.addEventListener('click', (e)=>{ e.preventDefault(); start(); });
   btnTry?.addEventListener('click', (e)=>{ e.preventDefault(); start(); });
   btnRestart?.addEventListener('click', (e)=>{ e.preventDefault(); start(); });
-  overlay?.addEventListener('click', (e)=>{ if (state !== 'playing') { e.preventDefault(); start(); } });
 
   // ===== Pipes / medallions =====
   function spawnPipePair(){
