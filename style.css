@@ -91,12 +91,27 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 /* 3) Overlay panels */
 #overlay,
 #gameover {
+ 
   position: absolute;
   inset: 0;
   z-index: 5;
   display: none;                 /* controlled by .show/.hide */
   align-items: center;
   justify-content: center;
+}
+
+#gameover {
+  display: flex !important;     /* panel is flex when .show is applied */
+  flex-direction: column;       /* <-- vertical */
+  align-items: center;          /* center each child */
+  justify-content: center;      /* center the group */
+  gap: 16px;                    /* space between title, board, button */
+  pointer-events: none;         /* container itself doesn't eat clicks */
+}
+
+#gameover > * {                 /* children stay clickable & centered */
+  pointer-events: auto;
+  margin: 0 auto;
 }
 
 /* Allow overlay clicks to start the game */
