@@ -286,7 +286,7 @@ refreshNameUI();
     return n * tileH + capH;
   }
 
-    function drawStackUp(x, y, w, h, capNudgeY = 0) {
+    function drawStackUp(x, y, w, h, capNudgeY = 2) {
       const { tileH, capH, sx } = scaledHeightsF();
       if (!segReady.tile || tileH <= 0 || w <= 0 || h <= 0) return;
 
