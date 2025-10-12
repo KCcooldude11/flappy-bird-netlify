@@ -287,43 +287,40 @@ refreshNameUI();
   }
 
     function drawStackUp(x, y, w, h, capNudgeY = 0) {
-  const { tileH, capH, sx } = scaledHeightsF();
-  if (!segReady.tile || tileH <= 0 || w <= 0 || h <= 0) return;
+      const { tileH, capH, sx } = scaledHeightsF();
+      if (!segReady.tile || tileH <= 0 || w <= 0 || h <= 0) return;
 
-  const TILE_OVERLAP = Math.max(1, Math.round(sx));          // hide seams
-  const TUCK = Math.max(2, Math.ceil((devicePixelRatio||1))); // stop tiles a bit early
+      const overlap = 1;
+      const drawW = segTile.width * sx;
+      const capY  = y + capNudgeY;
 
-  const drawW = Math.round(segTile.width * sx);
-  const capY  = y + capNudgeY;
+      // --- NEW: pad the clip to cover nudged cap + 1–2px outline (DPR-safe)
+      const pad = Math.max(2, Math.ceil((window.devicePixelRatio || 1)));
+      // include whichever is higher: the top of the rect or the nudged cap
+      const clipTop    = Math.min(y, capY);
+      const clipBottom = Math.max(y + h, capY + (segReady.cap ? capH : 0));
+      const clipX = Math.floor(x) - pad;
+      const clipY = Math.floor(clipTop) - pad;
+      const clipW = Math.ceil(w) + pad * 2;
+      const clipH = Math.ceil(clipBottom - clipTop) + pad * 2;
 
-  // 1) Clip region ONLY for the tiles, so they cannot extend into/under the cap.
-  const tilesClipTop = Math.floor(y);
-  const tilesClipBot = Math.floor(capY + (segReady.cap ? capH : 0) - TUCK);
-  const clipX = Math.floor(x);
-  const clipY = tilesClipTop;
-  const clipW = Math.ceil(w);
-  const clipH = Math.max(0, tilesClipBot - tilesClipTop);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(clipX, clipY, clipW, clipH);
+      ctx.clip();
+      ctx.imageSmoothingEnabled = false;
 
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(clipX, clipY, clipW, clipH);
-  ctx.clip();
-  ctx.imageSmoothingEnabled = false;
+      // fill from bottom up (slight overlap to hide seams)
+      let cursorY = y + h - tileH;
+      const limit = capY + (segReady.cap ? capH : 0) - overlap;
+      while (cursorY + tileH > limit) {
+        ctx.drawImage(segTile, x, cursorY, drawW, tileH);
+        cursorY -= (tileH - overlap);
+      }
 
-  // 2) Fill from bottom up (overlap tiles to hide seams).
-  let cursorY = y + h - tileH;
-  while (cursorY + tileH > y - TILE_OVERLAP) {
-    ctx.drawImage(segTile, Math.round(x), Math.round(cursorY), drawW, Math.round(tileH));
-    cursorY -= (tileH - TILE_OVERLAP);
-  }
-  ctx.restore();
-
-  // 3) Draw the cap on top (can be nudged toward the gap for the top spire).
-  if (segReady.cap) {
-    ctx.drawImage(segCap, Math.round(x), Math.round(capY), drawW, Math.round(capH));
-  }
-}
-
+      if (segReady.cap) ctx.drawImage(segCap, x, capY, drawW, capH);
+      ctx.restore();
+    }
 
 
   // orientation: 'up' grows upward; 'down' is a 180° flip of the rect (top spire)
