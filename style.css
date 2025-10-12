@@ -263,49 +263,53 @@ kbd {
 
 /* Rank cell with centered diamond + number */
 .leaderboard .rank{
-  --rw: 8px;   /* diamond half-width */
-  --rh: 12px;  /* diamond half-height */
+  --rw: 8px;   /* half-width  (tweak size here)  */
+  --rh: 12px;  /* half-height (kept small)       */
   position: relative;
-  width: 30px;
-  height: calc(var(--rh) * 2); /* 24px */
-  opacity: .85;
-}
-.leaderboard .rank-badge{
-  position: absolute;
-  left: 50%;
-  top: 50%;
   width: 0;
   height: 0;
-  transform: translate(-50%, -50%);
+  overflow: visible;
   filter: drop-shadow(0 3px 6px rgba(0,0,0,.18));
-  z-index: 0;
 }
-.leaderboard .rank-badge::before,
-.leaderboard .rank-badge::after {
-  content: "";
-  position: absolute;
+.leaderboard .rank::before{ border-bottom: var(--rh) solid #f9c44a; }
+.leaderboard .rank::after { top: var(--rh); border-top: var(--rh) solid #f9c44a; }
+
+/* was: .leaderboard .row:nth-child(odd) */
+.leaderboard .lb-rows .row:nth-child(odd){ background: rgba(0,0,0,.04); border-radius:6px; }
+
+.leaderboard .rank::before,
+.leaderboard .rank::after{
+  content:"";
+  position:absolute;
   left: calc(-1 * var(--rw));
   border-left:  var(--rw) solid transparent;
   border-right: var(--rw) solid transparent;
 }
-.leaderboard .rank-badge::before { border-bottom: var(--rh) solid #f9c44a; }
-.leaderboard .rank-badge::after  { top: var(--rh); border-top: var(--rh) solid #f9c44a; }
 
-.leaderboard .rank-num{
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 1;
+.leaderboard .rank .txt{
+  position:absolute;
+  z-index:1;
+  left:  calc(-1 * var(--rw));
+  width: calc(2 * var(--rw));
+  top:   var(--rh);
+  transform: translateY(-50%);
+  text-align:center;
+  line-height:1;
   font-size: 12px;
-  line-height: 1;
   font-variant-numeric: tabular-nums;
-  text-align: center;
 }
 
-/* Name & score cells */
-.leaderboard .name  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.leaderboard .score { text-align: right; font-variant-numeric: tabular-nums; }
+/* Header row: keep the plain “#” (no diamond) */
+.leaderboard .lb-head .rank{
+  position: static;
+  width: auto;
+  height: auto;
+  filter: none;
+}
+.leaderboard .lb-head .rank::before,
+.leaderboard .lb-head .rank::after{ content:none; }
+.leaderboard .lb-head .rank .txt{ position:static; transform:none; }
+
 
 /* ---------- Small screens ---------- */
 @media (max-width: 360px) {
