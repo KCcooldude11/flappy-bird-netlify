@@ -102,7 +102,8 @@ function updateScoreBadge(val){
   { name:'Orange',  idle:'./assets/Orange_Fly.png',   flap:'./assets/Orange_Regular.png' },
   { name:'Lottie',  idle:'./assets/Lottie_Fly.png',   flap:'./assets/Lottie_Regular.png' },
   { name:'Clovia',  idle:'./assets/Clovia_Fly.png',   flap:'./assets/Clovia_Regular.png' },
-  { name:'Salem',  idle:'./assets/Salem_Fly.png',   flap:'./assets/Salem_Regular.png' },
+  { name:'Salem', idle:'./assets/Salem_Fly.png', flap:'./assets/Salem_Regular.png', scale: 1.15 },
+
 
 
 ];
@@ -125,6 +126,14 @@ function updateScoreBadge(val){
   function getSavedName() {
     return (localStorage.getItem('playerName') || '').trim();
   }
+
+  const skinScale = i =>
+  (SKINS[i] && typeof SKINS[i].scale === 'number') ? SKINS[i].scale : 1;
+
+  function currentSkinScale(){
+    return skinScale(currentSkinIndex);
+  }
+
 
   async function saveName(name) {
     localStorage.setItem('playerName', name);
@@ -151,12 +160,14 @@ function updateScoreBadge(val){
   let currentFlapImg = SKINS[currentSkinIndex].flapImg;
 
   function switchToSkin(i){
-    if (!skinReady(i)) return false;
-    currentSkinIndex = i;
-    currentIdleImg = SKINS[i].idleImg;
-    currentFlapImg = SKINS[i].flapImg;
-    return true;
-  }
+  if (!skinReady(i)) return false;
+  currentSkinIndex = i;
+  currentIdleImg = SKINS[i].idleImg;
+  currentFlapImg = SKINS[i].flapImg;
+  bird.r = Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale()); // refresh radius
+  return true;
+}
+
 
   function nextSkin(){
   const start = (currentSkinIndex + 1) % SKINS.length;
@@ -229,11 +240,12 @@ refreshNameUI();
 
   // Compute current draw size preserving the active image’s aspect ratio.
   function currentDrawSize() {
-    const baseH = BIRD_BASE_H();
-    const img   = (bird?.flapTimer > 0) ? currentFlapImg : currentIdleImg;
+    const baseH  = BIRD_BASE_H() * currentSkinScale();   // <-- scaled height
+    const img    = (bird?.flapTimer > 0) ? currentFlapImg : currentIdleImg;
     const aspect = (img && img.width && img.height) ? (img.width / img.height) : 1;
-    return { w: Math.round(baseH * aspect), h: baseH };
-  }
+    return { w: Math.round(baseH * aspect), h: Math.round(baseH) };
+  } 
+
 
 
   // Collision tuning
@@ -243,9 +255,10 @@ refreshNameUI();
   window.addEventListener('resize', () => {
   resizeCanvas(); recomputeScale();
   bird.x = BIRD_X();
-  bird.r = BIRD_R(); // keep collision consistent with new scale
+  bird.r = Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale()); // scaled
   if (state !== 'playing') bird.y = Math.round(H()/2 - 80*S);
 });
+
 
 
   // ===== Segmented spire helpers =====
@@ -370,7 +383,11 @@ refreshNameUI();
 
   // ===== Game state =====
   let state = 'ready'; // ready | playing | gameover
-  let bird  = { x:BIRD_X(), y:Math.round(H()/2 - 80*S), vy:0, r:BIRD_R(), rot:0, flapTimer:0 };
+  let bird  = {
+  x:BIRD_X(), y:Math.round(H()/2 - 80*S), vy:0, rot:0, flapTimer:0,
+  r: Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale())
+};
+
   let pipes = [];
   let lastPipeAt = 0;
   let lastTime = 0;
@@ -386,8 +403,9 @@ refreshNameUI();
   // ===== Core helpers =====
   function resetGame(){
   // bird & world
+  bird.r = Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale());
   bird.x = BIRD_X(); bird.y = Math.round(H()/2 - 80*S);
-  bird.vy = 0; bird.rot = 0; bird.flapTimer = 0; bird.r = BIRD_R();
+  bird.vy = 0; bird.rot = 0; bird.flapTimer = 0;
   pipes = []; lastPipeAt = 0; score = 0;
   if (scoreTextEl) scoreTextEl.textContent = '0';
   updateScoreBadge(0);
