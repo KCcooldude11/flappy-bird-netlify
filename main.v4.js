@@ -97,13 +97,15 @@ function updateScoreBadge(val){
   // ===== Skins queue (pickup cycles to next) =====
   const SKINS = [
   { name:'Apple', idle:'./assets/Apple_Fly.png',  flap:'./assets/Apple_Regular.png' },
+    { name:'Orange',  idle:'./assets/Orange_Fly.png',   flap:'./assets/Orange_Regular.png', scale: 0.92},
   { name:'Comet', idle:'./assets/Comet_Fly.png',  flap:'./assets/Comet_Regular.png' },
   { name:'Theo',  idle:'./assets/Theo_Fly.png',   flap:'./assets/Theo_Regular.png' },
-  { name:'Orange',  idle:'./assets/Orange_Fly.png',   flap:'./assets/Orange_Regular.png' },
+  { name:'Orange',  idle:'./assets/Orange_Fly.png',   flap:'./assets/Orange_Regular.png', scale: 0.92},
   { name:'Lottie',  idle:'./assets/Lottie_Fly.png',   flap:'./assets/Lottie_Regular.png' },
   { name:'Clovia',  idle:'./assets/Clovia_Fly.png',   flap:'./assets/Clovia_Regular.png' },
   { name:'Salem', idle:'./assets/Salem_Fly.png', flap:'./assets/Salem_Regular.png', scale: 1.10 },
   { name:'Roni', idle:'./assets/Roni_Fly.png', flap:'./assets/Roni_Regular.png'},
+  { name:'Knogle', idle:'./assets/Knogle_Fly.png', flap:'./assets/Knogle_Regular.png'},
 
 ];
   for (const s of SKINS) {
@@ -117,7 +119,7 @@ function updateScoreBadge(val){
   }
     // Indices + lock
   const APPLE_INDEX = SKINS.findIndex(s => s.name === 'Apple');
-  const RONI_INDEX = SKINS.findIndex(s => s.name === 'Roni');
+  const KNOGLE_INDEX = SKINS.findIndex(s => s.name === 'Knogle');
   let skinLocked = false;
 
   const nameInput    = document.getElementById('username');
@@ -179,7 +181,7 @@ function updateScoreBadge(val){
   function nextSkinRespectTheoLock(){
   if (skinLocked) return false;
   const changed = nextSkin();
-  if (changed && currentSkinIndex === RONI_INDEX) skinLocked = true; // lock on Orange instead
+  if (changed && currentSkinIndex === KNOGLE_INDEX) skinLocked = true;
   return changed;
 }
 
