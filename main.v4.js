@@ -25,6 +25,8 @@
   const bg = new Image(); bg.src = './assets/Untitled_Artwork.png';
   let bgReady = false; bg.onload = () => bgReady = true;
 
+  const TOP_CAP_NUDGE = -3; 
+
   // Segmented spire art (tile + cap)
   const SEG_SRC_TILE_H = 22; // px in source
   const segTile = new Image(); segTile.src = './assets/rock_spire_bottom.png';
@@ -134,42 +136,40 @@
     return n * tileH + capH;
   }
 
-    function drawStackUp(x, y, w, h) {
-    const { tileH, capH, sx } = scaledHeightsF();     // keep your existing scaledHeightsF()
+  function drawStackUp(x, y, w, h) {
+    const { tileH, capH, sx } = scaledHeightsF();
     if (!segReady.tile || tileH <= 0 || w <= 0 || h <= 0) return;
 
-    const overlap = 1;                                 // 1px overlap to hide seams
+    const overlap = 1;
     const drawW = segTile.width * sx;
-    const capY  = y;                                   // cap sits at the top of the rect
+    const capY  = y + capNudgeY;
 
     ctx.save();
     ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
-    ctx.imageSmoothingEnabled = false;                 // sharper tiles; also helps seams
+    ctx.imageSmoothingEnabled = false;
 
-    // Draw tiles from the bottom upward, letting them overlap *into* the cap zone a hair.
+    // fill from bottom up, slightly overlapping so seams disappear
     let cursorY = y + h - tileH;
-    const limit = capY + capH - overlap;               // stop when top tile reaches under cap
+    const limit = capY + capH - overlap;
     while (cursorY + tileH > limit) {
       ctx.drawImage(segTile, x, cursorY, drawW, tileH);
-      cursorY -= (tileH - overlap);                    // step upward with overlap
+      cursorY -= (tileH - overlap);
     }
 
-    // Cap last (on top of tiles)
     if (segReady.cap) ctx.drawImage(segCap, x, capY, drawW, capH);
-
     ctx.restore();
   }
 
   // orientation: 'up' grows upward; 'down' is a 180° flip of the rect (top spire)
   function drawSpireSegmented(x, y, w, h, orientation = 'up') {
     if (orientation === 'up') {
-      drawStackUp(x, y, w, h);
+      drawStackUp(x, y, w, h, 0);
     } else {
-      // Flip the whole rect 180° so the same "grow up" logic applies, and overlap still tucks under its cap
+      // flip the rect, but nudge the cap upward toward the gap
       ctx.save();
       ctx.translate(x + w, y + h);
       ctx.scale(-1, -1);
-      drawStackUp(0, 0, w, h);
+      drawStackUp(0, 0, w, h, TOP_CAP_NUDGE);
       ctx.restore();
     }
   }
