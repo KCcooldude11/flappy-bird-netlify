@@ -98,12 +98,31 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 #hud .center { pointer-events: none; }
 
 #score {
-  font-size: 28px;
-  background: rgba(255,255,255,.8);
-  padding: 4px 12px;
-  border-radius: 999px;
+  --score-size: 44px;            /* JS will bump this for 3+ digits */
+  position: relative;
+  width: var(--score-size);
+  height: var(--score-size);
+  background: rgba(249, 196, 74);
+  border-radius: 10px;           /* slight rounding looks nice on a diamond */
   box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  transform: rotate(45deg);      /* make the square a diamond */
+  display: inline-flex;          /* center children before rotation */
+  align-items: center;
+  justify-content: center;
+  padding: 0;                    /* no pill padding; size is controlled */
 }
+
+/* Inner text rotated back so it’s upright */
+#score .txt {
+  transform: rotate(-45deg);
+  line-height: 1;
+  /* Scale font with the diamond */
+  font-size: calc(var(--score-size) * 0.5);
+  min-width: 1ch;
+  text-align: center;
+  display: inline-block;
+}
+
 #best {
   background: rgba(255,255,255,.7);
   padding: 4px 10px;

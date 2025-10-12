@@ -22,6 +22,30 @@
   const bestEl     = document.getElementById('best');
   const goSkin = document.getElementById('gameover-skin');
 
+    // Ensure #score has an inner span we can rotate back upright
+  const scoreTextEl = (() => {
+    if (!scoreEl) return null;
+    let t = scoreEl.querySelector('.txt');
+    if (!t) {
+      t = document.createElement('span');
+      t.className = 'txt';
+      t.textContent = scoreEl.textContent || '0';
+      scoreEl.textContent = '';
+      scoreEl.appendChild(t);
+    }
+    return t;
+  })();
+
+  updateScoreBadge(Number(scoreTextEl?.textContent || 0));
+
+
+  function updateScoreBadge(val) {
+    const digits = String(val).length;
+    // Base size fits 1–2 digits; grow ~14px per extra digit
+    const size = (digits <= 2) ? 44 : 44 + (digits - 2) * 14;
+    scoreEl?.style.setProperty('--score-size', `${size}px`);
+  }
+
   // Max vertical move of the gap *center* between consecutive columns
   const MAX_CENTER_DELTA = () => Math.round(0.99 * PIPE_GAP()); // ~65% of gap per column (tweak)
 
@@ -300,7 +324,9 @@
   bird.x = BIRD_X(); bird.y = Math.round(H()/2 - 80*S);
   bird.vy = 0; bird.rot = 0; bird.flapTimer = 0; bird.r = BIRD_R();
   pipes = []; lastPipeAt = 0; score = 0;
-  if (scoreEl) scoreEl.textContent = '0';
+  if (scoreTextEl) scoreTextEl.textContent = '0';
+  updateScoreBadge(0);
+
   medallions = []; columnsSpawned = 0; nextMedalColumn = 16;
 
   // skins: always start as Apple again and unlock
@@ -474,8 +500,12 @@
       }
 
       if (!p.scored && p.x + PIPE_WIDTH() < bird.x){
-        p.scored = true; score += 1; if (scoreEl) scoreEl.textContent = String(score);
+        p.scored = true;
+        score += 1;
+        if (scoreTextEl) scoreTextEl.textContent = String(score);
+        updateScoreBadge(score);
       }
+
     }
 
     // Medallions
