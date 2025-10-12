@@ -130,6 +130,12 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   margin: 0 auto;
 }
 
+#gameover > .leaderboard {
+  background: none;
+  box-shadow: none;
+  padding: 0;
+}
+
 /* Shared panel content look */
 #overlay > *, #gameover > * {
   background: rgba(255,255,255,.9);
@@ -162,9 +168,10 @@ kbd {
 
 /* ---------- Leaderboard ---------- */
 .leaderboard {
-  width: min(90vw, 340px);
+  width: min(94vw, 380px);
+  max-width: 100%;
+  overflow: auto;  
   max-height: 55vh;
-  overflow: auto;
   background: rgba(255,255,255,.92);
   backdrop-filter: blur(8px);
   border-radius: 12px;
@@ -174,7 +181,7 @@ kbd {
 .lb-head.row { font-weight: 600; opacity: .7; margin-bottom: 6px; }
 .row {
   display: grid;
-  grid-template-columns: 28px 1fr 66px;
+  grid-template-columns: 24px 1fr clamp(56px, 22vw, 84px);
   gap: 8px;
   padding: 6px;
   font-size: 14px;
@@ -185,7 +192,9 @@ kbd {
 .score { text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ---------- Small screens (optional fixed size) ---------- */
-@media (max-width: 520px) {
+@media (max-width: 360px) {
   /* Remove this block if you prefer full-screen on tiny devices */
   #game { width: 360px; height: 600px; }
+  .leaderboard { width: 94vw; }
+  .row { grid-template-columns: 22px 1fr clamp(52px, 24vw, 78px); }
 }
