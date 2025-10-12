@@ -97,31 +97,57 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 #hud .right { justify-content: flex-end; gap: 8px; }
 #hud .center { pointer-events: none; }
 
-#score {
-  --score-size: 44px;            /* JS will bump this for 3+ digits */
-  position: relative;
-  --score-w: calc(var(--score-size) * 0.85);
-  --score-h: calc(var(--score-size) * 1.25);
+#score{
+  /* JS will update --s based on digit count */
+  --s: 56px;                           /* overall scale */
+  --ratioX: 0.82;                      /* skinnier */
+  --ratioY: 1.28;                      /* taller */
 
   position: relative;
-  width: var(--score-w);
-  height: var(--score-h);
-  background: rgba(249, 196, 74);
-  border-radius: 10px;           /* slight rounding looks nice on a diamond */
-  box-shadow: 0 2px 8px rgba(0,0,0,.15);
-  transform: rotate(45deg);      /* make the square a diamond */
-  display: inline-flex;          /* center children before rotation */
+  width: calc(var(--s) * var(--ratioX));
+  height: calc(var(--s) * var(--ratioY));
+  transform: rotate(45deg);            /* square -> diamond */
+  border-radius: 14px;                 /* soft corners on the diamond */
+  background: #f9c44a;                 /* golden fill */
+  box-shadow: 0 8px 18px rgba(0,0,0,.22);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0;                    /* no pill padding; size is controlled */
+  padding: 0;
 }
 
-/* Inner text rotated back so it’s upright */
-#score .txt {
+/* dark outer rim */
+#score::before{
+  content:"";
+  position:absolute;
+  inset:-8px;                          /* thickness of the rim */
+  border-radius: 18px;
+  background:#5b281e;                  /* deep brown rim */
+  z-index:-1;
+}
+
+/* light inner diamond (the “facet”) */
+#score::after{
+  content:"";
+  position:absolute;
+  inset:18%;
+  border-radius:10px;
+  background:#ffef9a;                  /* pale yellow center */
+  /* very subtle four-way shading for a gem look */
+  background:
+    conic-gradient(from 45deg,
+      rgba(255,255,255,.35) 0 25%,
+      rgba(255,255,255,0)   0 50%,
+      rgba(0,0,0,.08)       0 75%,
+      rgba(0,0,0,0)         0 100%),
+    #ffef9a;
+}
+
+/* Upright number */
+#score .txt{
   transform: rotate(-45deg);
-  line-height: 1;
-  /* Scale font with the diamond */
-  font-size: calc(var(--score-size) * 0.5);
+  line-height:1;
+  font-size: calc(var(--s) * 0.46);   /* scales with the badge */
   min-width: 1ch;
   text-align: center;
   display: inline-block;
