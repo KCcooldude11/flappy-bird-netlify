@@ -170,8 +170,8 @@ kbd {
 .leaderboard {
   width: min(94vw, 380px);
   max-width: 100%;
-  overflow: auto;  
   max-height: 55vh;
+  overflow: auto;
   background: rgba(255,255,255,.92);
   backdrop-filter: blur(8px);
   border-radius: 12px;
