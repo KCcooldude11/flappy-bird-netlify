@@ -97,7 +97,6 @@ function updateScoreBadge(val){
   // ===== Skins queue (pickup cycles to next) =====
   const SKINS = [
   { name:'Apple', idle:'./assets/Apple_Fly.png',  flap:'./assets/Apple_Regular.png' },
-    { name:'Roni', idle:'./assets/Roni_Fly.png', flap:'./assets/Roni_Regular.png'},
   { name:'Comet', idle:'./assets/Comet_Fly.png',  flap:'./assets/Comet_Regular.png' },
   { name:'Theo',  idle:'./assets/Theo_Fly.png',   flap:'./assets/Theo_Regular.png' },
   { name:'Orange',  idle:'./assets/Orange_Fly.png',   flap:'./assets/Orange_Regular.png' },
@@ -286,28 +285,41 @@ refreshNameUI();
   }
 
     function drawStackUp(x, y, w, h, capNudgeY = 0) {
-    const { tileH, capH, sx } = scaledHeightsF();
-    if (!segReady.tile || tileH <= 0 || w <= 0 || h <= 0) return;
+      const { tileH, capH, sx } = scaledHeightsF();
+      if (!segReady.tile || tileH <= 0 || w <= 0 || h <= 0) return;
 
-    const overlap = 1;
-    const drawW = segTile.width * sx;
-    const capY  = y + capNudgeY;
+      const overlap = 1;
+      const drawW = segTile.width * sx;
+      const capY  = y + capNudgeY;
 
-    ctx.save();
-    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
-    ctx.imageSmoothingEnabled = false;
+      // --- NEW: pad the clip to cover nudged cap + 1–2px outline (DPR-safe)
+      const pad = Math.max(2, Math.ceil((window.devicePixelRatio || 1)));
+      // include whichever is higher: the top of the rect or the nudged cap
+      const clipTop    = Math.min(y, capY);
+      const clipBottom = Math.max(y + h, capY + (segReady.cap ? capH : 0));
+      const clipX = Math.floor(x) - pad;
+      const clipY = Math.floor(clipTop) - pad;
+      const clipW = Math.ceil(w) + pad * 2;
+      const clipH = Math.ceil(clipBottom - clipTop) + pad * 2;
 
-    // fill from bottom up, slightly overlapping so seams disappear
-    let cursorY = y + h - tileH;
-    const limit = capY + capH - overlap;
-    while (cursorY + tileH > limit) {
-      ctx.drawImage(segTile, x, cursorY, drawW, tileH);
-      cursorY -= (tileH - overlap);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(clipX, clipY, clipW, clipH);
+      ctx.clip();
+      ctx.imageSmoothingEnabled = false;
+
+      // fill from bottom up (slight overlap to hide seams)
+      let cursorY = y + h - tileH;
+      const limit = capY + (segReady.cap ? capH : 0) - overlap;
+      while (cursorY + tileH > limit) {
+        ctx.drawImage(segTile, x, cursorY, drawW, tileH);
+        cursorY -= (tileH - overlap);
+      }
+
+      if (segReady.cap) ctx.drawImage(segCap, x, capY, drawW, capH);
+      ctx.restore();
     }
 
-    if (segReady.cap) ctx.drawImage(segCap, x, capY, drawW, capH);
-    ctx.restore();
-  }
 
   // orientation: 'up' grows upward; 'down' is a 180° flip of the rect (top spire)
   function drawSpireSegmented(x, y, w, h, orientation = 'up') {
