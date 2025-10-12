@@ -25,7 +25,7 @@
   const bg = new Image(); bg.src = './assets/Untitled_Artwork.png';
   let bgReady = false; bg.onload = () => bgReady = true;
 
-  const TOP_CAP_NUDGE = -3; 
+  const TOP_CAP_NUDGE = -6; 
 
   // Segmented spire art (tile + cap)
   const SEG_SRC_TILE_H = 22; // px in source
@@ -54,24 +54,45 @@
     s.flapImg.onerror = () => s.flapReady = false;
     s.idleImg.src = s.idle; s.flapImg.src = s.flap;
   }
+    // Indices + lock
+  const APPLE_INDEX = SKINS.findIndex(s => s.name === 'Apple');
+  const THEO_INDEX  = SKINS.findIndex(s => s.name === 'Theo');
+  let skinLocked = false;
+
   const skinReady = i => !!(SKINS[i] && SKINS[i].idleReady && SKINS[i].flapReady);
+
+  // pick the first ready skin
   let currentSkinIndex = 0;
-  for (let i = 0; i < SKINS.length; i++) if (skinReady(i)) { currentSkinIndex = i; break; }
+  for (let i = 0; i < SKINS.length; i++) {
+    if (skinReady(i)) { currentSkinIndex = i; break; }
+  }
+  // if Apple is ready, prefer Apple at startup
+  if (APPLE_INDEX >= 0 && skinReady(APPLE_INDEX)) currentSkinIndex = APPLE_INDEX;
+
   let currentIdleImg = SKINS[currentSkinIndex].idleImg;
   let currentFlapImg = SKINS[currentSkinIndex].flapImg;
+
   function switchToSkin(i){
     if (!skinReady(i)) return false;
     currentSkinIndex = i;
-    currentIdleImg = SKINS[i].idleImg; currentFlapImg = SKINS[i].flapImg;
+    currentIdleImg = SKINS[i].idleImg;
+    currentFlapImg = SKINS[i].flapImg;
     return true;
   }
+
   function nextSkin(){
-    const start = (currentSkinIndex + 1) % SKINS.length;
-    for (let k = 0; k < SKINS.length; k++){
-      const idx = (start + k) % SKINS.length;
-      if (switchToSkin(idx)) return true;
-    }
-    return false;
+  const start = (currentSkinIndex + 1) % SKINS.length;
+  for (let k = 0; k < SKINS.length; k++){
+    const idx = (start + k) % SKINS.length;
+    if (switchToSkin(idx)) return true;
+  }
+  return false;
+  }
+  function nextSkinRespectTheoLock(){
+    if (skinLocked) return false;
+    const changed = nextSkin();
+    if (changed && currentSkinIndex === THEO_INDEX) skinLocked = true;
+    return changed;
   }
 
   // ===== Sizing / physics =====
@@ -247,15 +268,24 @@
 
   // ===== Core helpers =====
   function resetGame(){
-    bird.x = BIRD_X(); bird.y = Math.round(H()/2 - 80*S);
-    bird.vy = 0; bird.rot = 0; bird.flapTimer = 0; bird.r = BIRD_R();
-    pipes = []; lastPipeAt = 0; score = 0;
-    if (scoreEl) scoreEl.textContent = '0';
-    medallions = []; columnsSpawned = 0; nextMedalColumn = 10;
-    if (!skinReady(currentSkinIndex)){
-      for (let i=0;i<SKINS.length;i++) if (skinReady(i)){ switchToSkin(i); break; }
+  // bird & world
+  bird.x = BIRD_X(); bird.y = Math.round(H()/2 - 80*S);
+  bird.vy = 0; bird.rot = 0; bird.flapTimer = 0; bird.r = BIRD_R();
+  pipes = []; lastPipeAt = 0; score = 0;
+  if (scoreEl) scoreEl.textContent = '0';
+  medallions = []; columnsSpawned = 0; nextMedalColumn = 10;
+
+  // skins: always start as Apple again and unlock
+  skinLocked = false;
+  if (APPLE_INDEX >= 0 && skinReady(APPLE_INDEX)) {
+    switchToSkin(APPLE_INDEX);
+  } else {
+    // fallback to first ready skin if Apple isn't ready yet
+    for (let i = 0; i < SKINS.length; i++) {
+      if (skinReady(i)) { switchToSkin(i); break; }
     }
   }
+}
 
   let runStartTime = 0;
   function markRunStart(){ runStartTime = performance.now(); }
@@ -383,7 +413,8 @@
       for (let m of medallions){
         m.x -= PIPE_SPEED() * dt;
         const dx = bird.x - m.x, dy = bird.y - m.y, rr = bird.r + m.r;
-        if (!m.taken && (dx*dx + dy*dy) < rr*rr){ m.taken = true; nextSkin(); }
+        if (!m.taken && (dx*dx + dy*dy) < rr*rr){ m.taken = true;
+nextSkinRespectTheoLock(); }
       }
       medallions = medallions.filter(m => !m.taken && (m.x + m.size) > -40*S);
     }
