@@ -39,18 +39,22 @@
   <div class="go-card">
     <h2>Game Over</h2>
     <img id="gameover-skin" class="hide" alt="" />
-
       <div class="profile-line">
-    <strong id="go-username">Player</strong>
-    <button id="btn-edit-name" class="icon-btn" aria-label="Edit username" title="Edit username">✏️</button>
+    <strong id="go-username" class="username-label">Player</strong>
+    <button id="btn-edit-name" class="icon-btn" aria-label="Edit username" title="Edit username">
+      <!-- simple pencil icon, color comes from CSS (currentColor) -->
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" />
+        <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+      </svg>
+    </button>
   </div>
-
   <dialog id="rename-dlg">
     <form method="dialog" id="rename-form">
       <h3 style="margin:0 0 8px;">Edit username</h3>
       <input id="rename-input" maxlength="16" inputmode="text" autocomplete="username" placeholder="3–16 chars" />
       <div class="actions" style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end;">
-        <button value="cancel" type="button">Cancel</button>
+        <button id="rename-cancel" type="submit" value="cancel">Cancel</button>
         <button id="rename-save" value="default" disabled>Save</button>
       </div>
     </form>

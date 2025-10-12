@@ -468,12 +468,17 @@ renameInput?.addEventListener('input', refreshRenameUI);
 
 // Handle Save (form submit)
 renameForm?.addEventListener('submit', async (e) => {
-  e.preventDefault(); // keep control
-  const name = (renameInput?.value || '').trim();
-  if (!isValidName(name)) {
-    renameInput?.focus();
-    return;
+  const submitterId = e.submitter?.id;          // which button was clicked?
+
+  // If it's NOT the Save button, let the <dialog> auto-close (no preventDefault)
+  if (submitterId !== 'rename-save') {
+    return; // Cancel path — browser closes the dialog because method="dialog"
   }
+
+  // Save path
+  e.preventDefault();                            // stop auto-close while we validate & save
+  const name = (renameInput?.value || '').trim();
+  if (!isValidName(name)) { renameInput?.focus(); return; }
   await saveName(name);
   if (goNameEl) goNameEl.textContent = name || 'Player';
   try { renameDlg?.close(); } catch {}
