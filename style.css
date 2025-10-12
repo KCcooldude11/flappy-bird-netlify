@@ -5,6 +5,9 @@ html, body { height: 100%; margin: 0; }
 .show { display: flex !important; }
 .hide { display: none !important; }
 
+#hud { display: none; }
+#app.show-hud #hud { display: grid; }
+
 /* ---------- Fonts ---------- */
 @font-face{
   font-family: 'WitcherKnight';
