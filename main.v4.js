@@ -53,6 +53,8 @@
   { name:'Apple', idle:'./assets/Apple_Fly.png',  flap:'./assets/Apple_Regular.png' },
   { name:'Comet', idle:'./assets/Comet_Fly.png',  flap:'./assets/Comet_Regular.png' },
   { name:'Theo',  idle:'./assets/Theo_Fly.png',   flap:'./assets/Theo_Regular.png' },
+  { name:'Orange',  idle:'./assets/Orange_Fly.png',   flap:'./assets/Orange_Regular.png' },
+
 ];
   for (const s of SKINS) {
     s.idleImg = new Image(); s.flapImg = new Image();
@@ -65,7 +67,7 @@
   }
     // Indices + lock
   const APPLE_INDEX = SKINS.findIndex(s => s.name === 'Apple');
-  const THEO_INDEX  = SKINS.findIndex(s => s.name === 'Theo');
+  const ORANGE_INDEX = SKINS.findIndex(s => s.name === 'Orange');
   let skinLocked = false;
 
   const skinReady = i => !!(SKINS[i] && SKINS[i].idleReady && SKINS[i].flapReady);
@@ -98,11 +100,11 @@
   return false;
   }
   function nextSkinRespectTheoLock(){
-    if (skinLocked) return false;
-    const changed = nextSkin();
-    if (changed && currentSkinIndex === THEO_INDEX) skinLocked = true;
-    return changed;
-  }
+  if (skinLocked) return false;
+  const changed = nextSkin();
+  if (changed && currentSkinIndex === ORANGE_INDEX) skinLocked = true; // lock on Orange instead
+  return changed;
+}
 
   // ===== Sizing / physics =====
   const DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));

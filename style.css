@@ -5,7 +5,16 @@ html, body { height: 100%; margin: 0; }
 .show { display: flex !important; }
 .hide { display: none !important; }
 
-#hud { display: none; }
+#hud {
+  position: absolute;
+  top: 8px; left: 8px; right: 8px;
+  /* display: grid;   <-- REMOVE this line */
+  display: none;        /* keep it hidden by default */
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  pointer-events: none;
+}
+
 #app.show-hud #hud { display: grid; }
 
 /* ---------- Fonts ---------- */
