@@ -20,6 +20,9 @@
   const btnRestart = document.getElementById('btn-restart');
   const scoreEl    = document.getElementById('score');
   const bestEl     = document.getElementById('best');
+  // Max vertical move of the gap *center* between consecutive columns
+  const MAX_CENTER_DELTA = () => Math.round(0.65 * PIPE_GAP()); // ~65% of gap per column (tweak)
+
 
   // ===== Assets =====
   const bg = new Image(); bg.src = './assets/Untitled_Artwork.png';
@@ -332,40 +335,68 @@
 
   // ===== Pipes / medallions =====
   function spawnPipePair(){
-    const marginTop = Math.round(40*S), marginBot = Math.round(40*S);
-    const maxTop = H() - marginBot - PIPE_GAP() - marginTop;
+  const marginTop = Math.round(40*S), marginBot = Math.round(40*S);
+  const maxTopRaw = H() - marginBot - PIPE_GAP() - marginTop;
 
-    let topY = marginTop + Math.random() * Math.max(40*S, maxTop);
+  // 1) initial random top-of-gap
+  let topY = marginTop + Math.random() * Math.max(40*S, maxTopRaw);
 
-    // Quantize to tile+cap heights so stacks look clean
+  const prev = pipes[pipes.length - 1];
+
+  // 2) quantize to tiles+cap (so art stacks cleanly)
+  if (segReady.tile){
+    const qTop = quantizeSpireHeight(topY);
+    const desiredBottomH = H() - (qTop + PIPE_GAP());
+    const qBottom = quantizeSpireHeight(desiredBottomH);
+    const total = qTop + PIPE_GAP() + qBottom;
+    if (total <= H() - marginBot) topY = qTop;
+  }
+
+  // 3) limit how much the *center of the gap* can move from the last column
+  if (prev){
+    const prevCenter = prev.topH + PIPE_GAP()/2;
+    let   thisCenter = topY      + PIPE_GAP()/2;
+    const lim = MAX_CENTER_DELTA();
+
+    if (thisCenter > prevCenter + lim) thisCenter = prevCenter + lim;
+    if (thisCenter < prevCenter - lim) thisCenter = prevCenter - lim;
+
+    // convert center back to topY and keep within margins
+    topY = thisCenter - PIPE_GAP()/2;
+    topY = Math.max(marginTop, Math.min(topY, H() - marginBot - PIPE_GAP()));
+
+    // re-quantize after clamping so visuals still tile perfectly
     if (segReady.tile){
       const qTop = quantizeSpireHeight(topY);
       const desiredBottomH = H() - (qTop + PIPE_GAP());
       const qBottom = quantizeSpireHeight(desiredBottomH);
       const total = qTop + PIPE_GAP() + qBottom;
-      if (total <= H() - marginBot) topY = qTop;
-    }
-
-    const x = W() + 40*S;
-    const prev = pipes[pipes.length - 1];
-    const p = { x, topH: topY, gapY: topY + PIPE_GAP(), scored:false };
-    pipes.push(p);
-
-    columnsSpawned++;
-
-    if (columnsSpawned === nextMedalColumn && prev){
-      const mx = Math.round((prev.x + x) / 2);
-      const gapTop = prev.topH, gapBot = prev.gapY;
-      const safeMargin = Math.round(0.2 * PIPE_GAP());
-      const minY = gapTop + safeMargin, maxY = gapBot - safeMargin;
-      const centerY = (minY + maxY) / 2;
-      const jitter = (Math.random() * 0.4 - 0.2) * (maxY - minY);
-      const my = Math.round(centerY + jitter);
-      const size = Math.max(68, Math.round(28*S));
-      medallions.push({ x:mx, y:my, size, r:Math.round(size*0.42), taken:false });
-      nextMedalColumn += 10 + (Math.floor(Math.random()*5) - 2);
+      topY = (total <= H() - marginBot) ? qTop : topY;
     }
   }
+
+  // 4) finalize column
+  const x = W() + 40*S;
+  const p = { x, topH: topY, gapY: topY + PIPE_GAP(), scored:false };
+  pipes.push(p);
+
+  // -------- medallion logic unchanged --------
+  columnsSpawned++;
+  const last = pipes[pipes.length - 2];
+  if (columnsSpawned === nextMedalColumn && last){
+    const mx = Math.round((last.x + x) / 2);
+    const gapTop = last.topH, gapBot = last.gapY;
+    const safeMargin = Math.round(0.2 * PIPE_GAP());
+    const minY = gapTop + safeMargin, maxY = gapBot - safeMargin;
+    const centerY = (minY + maxY) / 2;
+    const jitter = (Math.random() * 0.4 - 0.2) * (maxY - minY);
+    const my = Math.round(centerY + jitter);
+    const size = Math.max(68, Math.round(28*S));
+    medallions.push({ x:mx, y:my, size, r:Math.round(size*0.42), taken:false });
+    nextMedalColumn += 10 + (Math.floor(Math.random()*5) - 2);
+  }
+}
+
 
   function circleRectOverlap(cx, cy, cr, rx, ry, rw, rh){
     const nx = Math.max(rx, Math.min(cx, rx + rw));
