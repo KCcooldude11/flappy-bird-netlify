@@ -106,6 +106,7 @@ function updateScoreBadge(val){
   { name:'Salem', idle:'./assets/Salem_Fly.png', flap:'./assets/Salem_Regular.png', scale: 1.10 },
   { name:'Roni', idle:'./assets/Roni_Fly.png', flap:'./assets/Roni_Regular.png'},
   { name:'Knogle', idle:'./assets/Knogle_Fly.png', flap:'./assets/Knogle_Regular.png'},
+  { name:'Orchard', idle:'./assets/Orchard_Fly.png', flap:'./assets/Orchard_Regular.png'},
 
 ];
   for (const s of SKINS) {
@@ -119,7 +120,7 @@ function updateScoreBadge(val){
   }
     // Indices + lock
   const APPLE_INDEX = SKINS.findIndex(s => s.name === 'Apple');
-  const KNOGLE_INDEX = SKINS.findIndex(s => s.name === 'Knogle');
+  const ORCHARD_INDEX = SKINS.findIndex(s => s.name === 'Orchard');
   let skinLocked = false;
 
   const nameInput    = document.getElementById('username');
@@ -181,7 +182,7 @@ function updateScoreBadge(val){
   function nextSkinRespectTheoLock(){
   if (skinLocked) return false;
   const changed = nextSkin();
-  if (changed && currentSkinIndex === KNOGLE_INDEX) skinLocked = true;
+  if (changed && currentSkinIndex === ORCHARD_INDEX) skinLocked = true;
   return changed;
 }
 
