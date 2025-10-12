@@ -97,14 +97,14 @@ function updateScoreBadge(val){
   // ===== Skins queue (pickup cycles to next) =====
   const SKINS = [
   { name:'Apple', idle:'./assets/Apple_Fly.png',  flap:'./assets/Apple_Regular.png' },
+    { name:'Roni', idle:'./assets/Roni_Fly.png', flap:'./assets/Roni_Regular.png'},
   { name:'Comet', idle:'./assets/Comet_Fly.png',  flap:'./assets/Comet_Regular.png' },
   { name:'Theo',  idle:'./assets/Theo_Fly.png',   flap:'./assets/Theo_Regular.png' },
   { name:'Orange',  idle:'./assets/Orange_Fly.png',   flap:'./assets/Orange_Regular.png' },
   { name:'Lottie',  idle:'./assets/Lottie_Fly.png',   flap:'./assets/Lottie_Regular.png' },
   { name:'Clovia',  idle:'./assets/Clovia_Fly.png',   flap:'./assets/Clovia_Regular.png' },
   { name:'Salem', idle:'./assets/Salem_Fly.png', flap:'./assets/Salem_Regular.png', scale: 1.10 },
-
-
+  { name:'Roni', idle:'./assets/Roni_Fly.png', flap:'./assets/Roni_Regular.png'},
 
 ];
   for (const s of SKINS) {
@@ -118,7 +118,7 @@ function updateScoreBadge(val){
   }
     // Indices + lock
   const APPLE_INDEX = SKINS.findIndex(s => s.name === 'Apple');
-  const SALEM_INDEX = SKINS.findIndex(s => s.name === 'Salem');
+  const RONI_INDEX = SKINS.findIndex(s => s.name === 'Roni');
   let skinLocked = false;
 
   const nameInput    = document.getElementById('username');
@@ -180,7 +180,7 @@ function updateScoreBadge(val){
   function nextSkinRespectTheoLock(){
   if (skinLocked) return false;
   const changed = nextSkin();
-  if (changed && currentSkinIndex === SALEM_INDEX) skinLocked = true; // lock on Orange instead
+  if (changed && currentSkinIndex === RONI_INDEX) skinLocked = true; // lock on Orange instead
   return changed;
 }
 
