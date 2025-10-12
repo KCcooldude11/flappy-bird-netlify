@@ -356,15 +356,18 @@
 
   // ===== Input =====
   window.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' || e.code === 'ArrowUp'){
-      e.preventDefault();
-      if (state === 'ready' || state === 'gameover') start(); else flap();
-    } else if (e.code === 'Enter' && state !== 'playing'){
-      start();
-    }
-  });
-  const onTap = () => { if (state === 'ready' || state === 'gameover') start(); else flap(); };
-  canvas.addEventListener('pointerdown', onTap);
+  if (e.code === 'Space' || e.code === 'ArrowUp') {
+    e.preventDefault();
+    if (state === 'playing') flap();     // no starting from Space/ArrowUp
+  } else if (e.code === 'Enter') {
+    e.preventDefault();
+    if (state !== 'playing') start();    // only Enter (or buttons) can start/restart
+  }
+});
+  canvas.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  if (state === 'playing') flap();
+});
   btnPlay?.addEventListener('click', (e)=>{ e.preventDefault(); start(); });
   btnTry?.addEventListener('click', (e)=>{ e.preventDefault(); start(); });
   btnRestart?.addEventListener('click', (e)=>{ e.preventDefault(); start(); });
