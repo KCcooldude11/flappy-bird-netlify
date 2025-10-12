@@ -331,7 +331,7 @@
       const centerY = (minY + maxY) / 2;
       const jitter = (Math.random() * 0.4 - 0.2) * (maxY - minY);
       const my = Math.round(centerY + jitter);
-      const size = Math.max(35, Math.round(28*S));
+      const size = Math.max(68, Math.round(28*S));
       medallions.push({ x:mx, y:my, size, r:Math.round(size*0.42), taken:false });
       nextMedalColumn += 10 + (Math.floor(Math.random()*5) - 2);
     }
@@ -412,12 +412,18 @@
     }
 
     // Medallions
-    if (medalReady){
+        // Medallions (preserve original aspect ratio; m.size = target height)
+    if (medalReady && medallions.length){
+      const aspect = medalImg.width / medalImg.height; // width / height
       for (let m of medallions){
-        const s = m.size;
-        ctx.drawImage(medalImg, Math.round(m.x - s/2), Math.round(m.y - s/2), s, s);
+        const hpx = m.size;
+        const wpx = Math.round(hpx * aspect);
+        const dx = Math.round(m.x - wpx / 2);
+        const dy = Math.round(m.y - hpx / 2);
+        ctx.drawImage(medalImg, dx, dy, wpx, hpx);
       }
     }
+
 
     // Bird
     ctx.save();
