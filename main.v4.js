@@ -20,6 +20,8 @@
   const btnRestart = document.getElementById('btn-restart');
   const scoreEl    = document.getElementById('score');
   const bestEl     = document.getElementById('best');
+  const goSkin = document.getElementById('gameover-skin');
+
   // Max vertical move of the gap *center* between consecutive columns
   const MAX_CENTER_DELTA = () => Math.round(0.99 * PIPE_GAP()); // ~65% of gap per column (tweak)
 
@@ -321,6 +323,7 @@
     state = 'playing';
     overlay?.classList.add('hide'); overlay?.classList.remove('show');
     gameoverEl?.classList.add('hide'); gameoverEl?.classList.remove('show');
+    if (goSkin) { goSkin.src = ''; goSkin.classList.add('hide'); }
     lastTime = performance.now();
     requestAnimationFrame(loop);
   }
@@ -328,11 +331,21 @@
   async function gameOver(){
     state = 'gameover';
     if (score > best){ best = score; localStorage.setItem('flappy-best', String(best)); bestEl && (bestEl.textContent = 'Best: ' + best); }
-    gameoverEl?.classList.remove('hide'); gameoverEl?.classList.add('show');
     const playMs = Math.round(performance.now() - runStartTime);
     const result = await postScore(DEVICE_ID, score, playMs);
     if (result?.error) console.warn('submit-score error:', result.error);
     await loadLeaderboard();
+    if (goSkin) {
+    const skin = SKINS[currentSkinIndex];
+    // prefer the preloaded image src if available
+    const src = (skin?.flapImg && skin.flapImg.src) ? skin.flapImg.src : (skin?.flap || '');
+    goSkin.src = src;
+    goSkin.alt = skin?.name ? `${skin.name} (Regular)` : 'Character';
+    goSkin.classList.remove('hide');
+  }
+
+  gameoverEl?.classList.remove('hide');
+  gameoverEl?.classList.add('show');
   }
 
   function flap(){

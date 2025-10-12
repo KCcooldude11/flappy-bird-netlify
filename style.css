@@ -183,6 +183,15 @@ kbd {
   padding: 6px;
   font-size: 14px;
 }
+
+.go-skin {
+  display: block;
+  width: clamp(96px, 28vw, 200px);
+  height: auto;                /* preserve aspect */
+  margin: 6px auto 0;
+  image-rendering: auto;       /* or 'pixelated' if you like the chunky look */
+}
+
 .row:nth-child(odd) { background: rgba(0,0,0,.04); border-radius: 6px; }
 .rank  { text-align: right; opacity: .7; }
 .name  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
