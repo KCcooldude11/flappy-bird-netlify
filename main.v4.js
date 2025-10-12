@@ -243,7 +243,7 @@
   // Medallions
   let medallions = []; // {x,y,size,r,taken}
   let columnsSpawned = 0;
-  let nextMedalColumn = 6;
+  let nextMedalColumn = 10;
 
   // ===== Core helpers =====
   function resetGame(){
