@@ -130,20 +130,35 @@
   const PIPE_SPEED = () => 160 * S;
   const PIPE_GAP   = () => Math.round(160 * S);
   const PIPE_INTERVAL = 1500; // ms
+
   const PIPE_WIDTH = () => Math.round(70 * S);
-  const BIRD_W = () => Math.round(100 * S);
-  const BIRD_H = () => Math.round(100 * S);
-  const BIRD_R = () => Math.round(Math.min(BIRD_W(), BIRD_H()) * 0.20);
+
+  // Visual height is fixed for all skins; width varies by sprite aspect.
+  const BIRD_BASE_H = () => Math.round(100 * S);
+
+  // Collision radius tied to height (not width) so long sprites aren’t penalized.
+  const BIRD_R = () => Math.round(BIRD_BASE_H() * 0.20);
+
+  // Compute current draw size preserving the active image’s aspect ratio.
+  function currentDrawSize() {
+    const baseH = BIRD_BASE_H();
+    const img   = (bird?.flapTimer > 0) ? currentFlapImg : currentIdleImg;
+    const aspect = (img && img.width && img.height) ? (img.width / img.height) : 1;
+    return { w: Math.round(baseH * aspect), h: baseH };
+  }
+
 
   // Collision tuning
   const HIT_INSET_X = () => Math.round(PIPE_WIDTH() * 0.14);
   const CAP_INSET_Y = () => Math.round(8 * S);
 
   window.addEventListener('resize', () => {
-    resizeCanvas(); recomputeScale();
-    bird.x = BIRD_X();
-    if (state !== 'playing') bird.y = Math.round(H()/2 - 80*S);
-  });
+  resizeCanvas(); recomputeScale();
+  bird.x = BIRD_X();
+  bird.r = BIRD_R(); // keep collision consistent with new scale
+  if (state !== 'playing') bird.y = Math.round(H()/2 - 80*S);
+});
+
 
   // ===== Segmented spire helpers =====
   function segScaleX() {
@@ -460,7 +475,6 @@ nextSkinRespectTheoLock(); }
   }
 
   function draw(){
-    const w = W(), h = H();
 
     // Background
     if (bgReady){
@@ -494,14 +508,25 @@ nextSkinRespectTheoLock(); }
       }
     }
 
+    function currentDrawSize() {
+      const baseH = BIRD_BASE_H();
+      const img   = (bird.flapTimer > 0) ? currentFlapImg : currentIdleImg;
+      const aspect = (img && img.width && img.height) ? (img.width / img.height) : 1;
+      const w = Math.round(baseH * aspect);
+      const h = baseH;
+      return { w, h };
+    }
+
 
     // Bird
-    ctx.save();
-    ctx.translate(bird.x, bird.y);
-    ctx.rotate(bird.rot * 0.45);
-    const img = (bird.flapTimer > 0) ? currentFlapImg : currentIdleImg;
-    ctx.drawImage(img, -BIRD_W()/2, -BIRD_H()/2, BIRD_W(), BIRD_H());
-    ctx.restore();
+      ctx.save();
+      ctx.translate(bird.x, bird.y);
+      ctx.rotate(bird.rot * 0.45);
+      const img = (bird.flapTimer > 0) ? currentFlapImg : currentIdleImg;
+      const { w, h } = currentDrawSize();
+      ctx.drawImage(img, -w/2, -h/2, w, h);
+      ctx.restore();
+
 
     if (state === 'ready'){ overlay?.classList.add('show'); overlay?.classList.remove('hide'); }
   }
