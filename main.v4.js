@@ -287,58 +287,40 @@ refreshNameUI();
   }
 
     function drawStackUp(x, y, w, h, capNudgeY = 0) {
-  const { tileH, capH, sx } = scaledHeightsF();
-  if (!segReady.tile || tileH <= 0 || w <= 0 || h <= 0) return;
+      const { tileH, capH, sx } = scaledHeightsF();
+      if (!segReady.tile || tileH <= 0 || w <= 0 || h <= 0) return;
 
-  const drawW   = segTile.width * sx;
-  const capY    = y + capNudgeY;
-  const limit   = capY + (segReady.cap ? capH : 0); // tiles must NOT draw above this (minus bleed)
-  const overlap = 1;                                 // keep slight overlap to hide seams
-  const bleed   = Math.max(1, Math.round((window.devicePixelRatio || 1))); // DPR-safe extra trim
+      const overlap = 1;
+      const drawW = segTile.width * sx;
+      const capY  = y + capNudgeY;
 
-  // Generous clip so cap outline never gets clipped
-  const pad = Math.max(2, Math.ceil((window.devicePixelRatio || 1)));
-  const clipTop    = Math.min(y, capY);
-  const clipBottom = Math.max(y + h, capY + (segReady.cap ? capH : 0));
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(Math.floor(x) - pad, Math.floor(clipTop) - pad,
-           Math.ceil(w) + pad * 2, Math.ceil(clipBottom - clipTop) + pad * 2);
-  ctx.clip();
-  ctx.imageSmoothingEnabled = false;
+      // --- NEW: pad the clip to cover nudged cap + 1–2px outline (DPR-safe)
+      const pad = Math.max(2, Math.ceil((window.devicePixelRatio || 1)));
+      // include whichever is higher: the top of the rect or the nudged cap
+      const clipTop    = Math.min(y, capY);
+      const clipBottom = Math.max(y + h, capY + (segReady.cap ? capH : 0));
+      const clipX = Math.floor(x) - pad;
+      const clipY = Math.floor(clipTop) - pad;
+      const clipW = Math.ceil(w) + pad * 2;
+      const clipH = Math.ceil(clipBottom - clipTop) + pad * 2;
 
-  // Draw from bottom upward
-  let cursorY = y + h - tileH;               // top of the current tile
-  const step  = tileH - overlap;             // advance per tile (with overlap)
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(clipX, clipY, clipW, clipH);
+      ctx.clip();
+      ctx.imageSmoothingEnabled = false;
 
-  while (cursorY + tileH > limit - bleed) {
-    // For the last tile near the cap, crop off any part that would intrude
-    const overflow = (cursorY + tileH) - (limit - bleed); // how much of the top would poke under cap
-    if (overflow > 0 && overflow < tileH) {
-      // Crop from the top of the tile by "overflow"
-      const srcX = 0, srcY = Math.floor(overflow / sx); // convert overflow back to source px
-      const srcW = segTile.width, srcH = Math.max(0, segTile.height - srcY);
-
-      const dstY = cursorY + overflow;                   // shove dest down by same amount
-      const dstH = tileH - overflow;                     // reduced height
-
-      if (srcH > 0 && dstH > 0) {
-        ctx.drawImage(segTile, srcX, srcY, srcW, srcH, x, dstY, drawW, dstH);
+      // fill from bottom up (slight overlap to hide seams)
+      let cursorY = y + h - tileH;
+      const limit = capY + (segReady.cap ? capH : 0) - overlap;
+      while (cursorY + tileH > limit) {
+        ctx.drawImage(segTile, x, cursorY, drawW, tileH);
+        cursorY -= (tileH - overlap);
       }
-      break; // this was the last (cropped) tile
-    } else {
-      // Fully safe tile
-      ctx.drawImage(segTile, x, cursorY, drawW, tileH);
-      cursorY -= step;
-      // If we've gone below the column, stop
-      if (cursorY + tileH <= y) break;
+
+      if (segReady.cap) ctx.drawImage(segCap, x, capY, drawW, capH);
+      ctx.restore();
     }
-  }
-
-  if (segReady.cap) ctx.drawImage(segCap, x, capY, drawW, capH);
-  ctx.restore();
-}
-
 
 
   // orientation: 'up' grows upward; 'down' is a 180° flip of the rect (top spire)
