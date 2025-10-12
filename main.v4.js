@@ -321,14 +321,11 @@ refreshNameUI();
     return;
   }
   wrap.innerHTML = list.map((r,i)=>`
-    <div class="row">
-      <span class="rank">
-        <span class="rank-badge" aria-hidden="true"></span>
-        <span class="rank-num">${i+1}</span>
-      </span>
-      <span class="name">${escapeHtml(r.name ?? 'Player')}</span>
-      <span class="score">${Number(r.score ?? 0)}</span>
-    </div>`).join('');
+  <div class="row">
+    <span class="rank"><span class="txt">${i+1}</span></span>
+    <span class="name">${escapeHtml(r.name ?? 'Player')}</span>
+    <span class="score">${Number(r.score ?? 0)}</span>
+  </div>`).join('');
 }
   async function postScore(deviceId, score, playMs){
     try {

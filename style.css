@@ -286,6 +286,19 @@ kbd {
   border-right: var(--rw) solid transparent;
 }
 
+.leaderboard .rank .rank-num{
+  position:absolute;
+  z-index:1;
+  left:  calc(-1 * var(--rw));
+  width: calc(2 * var(--rw));
+  top:   var(--rh);
+  transform: translateY(-50%);
+  text-align:center;
+  line-height:1;
+  font-size:12px;
+  font-variant-numeric: tabular-nums;
+}
+
 .leaderboard .rank .txt{
   position:absolute;
   z-index:1;
