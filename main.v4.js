@@ -251,7 +251,7 @@
     bird.vy = 0; bird.rot = 0; bird.flapTimer = 0; bird.r = BIRD_R();
     pipes = []; lastPipeAt = 0; score = 0;
     if (scoreEl) scoreEl.textContent = '0';
-    medallions = []; columnsSpawned = 0; nextMedalColumn = 6;
+    medallions = []; columnsSpawned = 0; nextMedalColumn = 10;
     if (!skinReady(currentSkinIndex)){
       for (let i=0;i<SKINS.length;i++) if (skinReady(i)){ switchToSkin(i); break; }
     }
