@@ -135,6 +135,17 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   pointer-events: none;
 }
 
+.field { display:flex; flex-direction:column; gap:6px; width: min(80vw, 260px); }
+.field input {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,.15);
+  background: rgba(255,255,255,.95);
+  font-size: 16px;
+}
+#btn-play[disabled],
+
+
 
 #best {
   background: rgba(255,255,255,.7);
@@ -240,6 +251,40 @@ kbd {
   padding: 6px;
   font-size: 14px;
 }
+
+.profile-line{
+  display:flex; align-items:center; gap:8px;
+  margin-top: 6px;
+  font-size: 18px;
+}
+
+.icon-btn{
+  border:0; background:transparent; cursor:pointer;
+  font-size: 18px; line-height: 1;
+  padding: 4px 6px; border-radius: 8px;
+}
+.icon-btn:hover{ background: rgba(0,0,0,.06); }
+
+#rename-dlg{
+  border:0; padding:0;
+  border-radius:14px;
+  box-shadow: 0 18px 40px rgba(0,0,0,.25);
+}
+#rename-dlg::backdrop{ background: rgba(0,0,0,.35); }
+#rename-form{
+  padding:16px 18px;
+  min-width: 260px;
+  display:flex; flex-direction:column; gap:8px;
+}
+#rename-input{
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,.15);
+  background: rgba(255,255,255,.95);
+  font-size: 16px;
+}
+#rename-save[disabled]{ opacity:.55; cursor:not-allowed; }
+
 
 .go-skin {
   display: block;

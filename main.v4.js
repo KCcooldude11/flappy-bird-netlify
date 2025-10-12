@@ -22,6 +22,13 @@
   const bestEl     = document.getElementById('best');
   const goSkin = document.getElementById('gameover-skin');
   const BLUR_PX = 6;
+  const goNameEl     = document.getElementById('go-username');
+  const btnEditName  = document.getElementById('btn-edit-name');
+  const renameDlg    = document.getElementById('rename-dlg');
+  const renameForm   = document.getElementById('rename-form');
+  const renameInput  = document.getElementById('rename-input');
+  const renameSave   = document.getElementById('rename-save');
+
 
     // Ensure #score has an inner span we can rotate back upright
   const scoreTextEl = (() => {
@@ -114,8 +121,6 @@ function updateScoreBadge(val){
   let skinLocked = false;
 
   const nameInput    = document.getElementById('username');
-  const nameGoInput  = document.getElementById('username-go');
-  const btnSaveNameGo= document.getElementById('btn-save-name-go');
 
   function getSavedName() {
     return (localStorage.getItem('playerName') || '').trim();
@@ -177,17 +182,16 @@ function updateScoreBadge(val){
   };
 
   const existing = getSavedName();
-if (nameInput)   nameInput.value   = existing;
-if (nameGoInput) nameGoInput.value = existing;
+  if (nameInput) nameInput.value = existing;
+  if (goNameEl)  goNameEl.textContent = existing || 'Player';
+
 
 function refreshNameUI() {
   const okHome = isValidName(nameInput?.value || '');
-  const okGO   = isValidName(nameGoInput?.value || '');
   if (btnPlay) btnPlay.disabled = !okHome;
-  if (btnSaveNameGo) btnSaveNameGo.disabled = !okGO;
 }
+
 nameInput?.addEventListener('input', refreshNameUI);
-nameGoInput?.addEventListener('input', refreshNameUI);
 refreshNameUI();
 
   // ===== Sizing / physics =====
@@ -342,11 +346,6 @@ refreshNameUI();
     if (!id){ id = crypto.randomUUID(); localStorage.setItem('deviceId', id); }
     return id;
   }
-  function getOrAskName(){
-    let name = localStorage.getItem('playerName');
-    if (!name){ name = (prompt('Choose a username (max 16):') || 'Guest').slice(0,16).trim(); localStorage.setItem('playerName', name); }
-    return name;
-  }
   async function registerIdentityIfNeeded(){
   const deviceId = ensureDeviceId();
   let name = getSavedName();
@@ -427,6 +426,7 @@ refreshNameUI();
     const result = await postScore(DEVICE_ID, score, playMs);
     if (result?.error) console.warn('submit-score error:', result.error);
     await loadLeaderboard();
+    if (goNameEl) goNameEl.textContent = getSavedName() || 'Player';
     if (goSkin) {
     const skin = SKINS[currentSkinIndex];
     // prefer the preloaded image src if available
@@ -445,6 +445,40 @@ refreshNameUI();
     if (state !== 'playing') return;
     bird.vy = JUMP_VY(); bird.flapTimer = 300;
   }
+
+  function refreshRenameUI(){
+  const ok = isValidName((renameInput?.value || '').trim());
+  if (renameSave) renameSave.disabled = !ok;
+}
+
+// Open dialog with current name
+btnEditName?.addEventListener('click', () => {
+  if (!renameDlg) return;
+  const current = getSavedName();
+  if (renameInput) {
+    renameInput.value = current || '';
+    renameInput.select();
+  }
+  refreshRenameUI();
+  renameDlg.showModal();
+});
+
+// Live validation
+renameInput?.addEventListener('input', refreshRenameUI);
+
+// Handle Save (form submit)
+renameForm?.addEventListener('submit', async (e) => {
+  e.preventDefault(); // keep control
+  const name = (renameInput?.value || '').trim();
+  if (!isValidName(name)) {
+    renameInput?.focus();
+    return;
+  }
+  await saveName(name);
+  if (goNameEl) goNameEl.textContent = name || 'Player';
+  try { renameDlg?.close(); } catch {}
+});
+
 
   // ===== Input =====
  window.addEventListener('keydown', (e) => {
@@ -474,15 +508,6 @@ btnPlay?.addEventListener('click', async (e) => {
   if (!isValidName(name)) { nameInput?.focus(); return; }
   await saveName(name);
   start();
-});
-
-btnSaveNameGo?.addEventListener('click', async (e) => {
-  e.preventDefault();
-  const name = (nameGoInput?.value || '').trim();
-  if (!isValidName(name)) { nameGoInput?.focus(); return; }
-  await saveName(name);
-  btnSaveNameGo.textContent = 'Saved!';
-  setTimeout(() => (btnSaveNameGo.textContent = 'Save'), 900);
 });
 
   btnTry?.addEventListener('click', (e)=>{ e.preventDefault(); start(); });

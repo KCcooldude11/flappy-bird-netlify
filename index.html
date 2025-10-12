@@ -40,13 +40,22 @@
     <h2>Game Over</h2>
     <img id="gameover-skin" class="hide" alt="" />
 
-    <div class="rename">
-      <label class="field">
-        <span>Change username</span>
-        <input id="username-go" maxlength="16" inputmode="text" autocomplete="username" placeholder="3–16 chars">
-      </label>
-      <button id="btn-save-name-go">Save</button>
-    </div>
+      <div class="profile-line">
+    <strong id="go-username">Player</strong>
+    <button id="btn-edit-name" class="icon-btn" aria-label="Edit username" title="Edit username">✏️</button>
+  </div>
+
+  <dialog id="rename-dlg">
+    <form method="dialog" id="rename-form">
+      <h3 style="margin:0 0 8px;">Edit username</h3>
+      <input id="rename-input" maxlength="16" inputmode="text" autocomplete="username" placeholder="3–16 chars" />
+      <div class="actions" style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end;">
+        <button value="cancel" type="button">Cancel</button>
+        <button id="rename-save" value="default" disabled>Save</button>
+      </div>
+    </form>
+  </dialog>
+
   </div>
 
   <div class="leaderboard">
