@@ -262,21 +262,20 @@ kbd {
 .leaderboard .row:nth-child(odd) { background: rgba(0,0,0,.04); border-radius: 6px; }
 
 /* Rank cell with centered diamond + number */
-.leaderboard .rank {
+.leaderboard .rank{
   --rw: 8px;   /* diamond half-width */
   --rh: 12px;  /* diamond half-height */
   position: relative;
   width: 30px;
-  height: calc(var(--rh) * 2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  height: calc(var(--rh) * 2); /* 24px */
   opacity: .85;
 }
-.leaderboard .rank-badge {
+.leaderboard .rank-badge{
   position: absolute;
-  left: 50%; top: 50%;
-  width: 0; height: 0;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
   transform: translate(-50%, -50%);
   filter: drop-shadow(0 3px 6px rgba(0,0,0,.18));
   z-index: 0;
@@ -291,8 +290,12 @@ kbd {
 }
 .leaderboard .rank-badge::before { border-bottom: var(--rh) solid #f9c44a; }
 .leaderboard .rank-badge::after  { top: var(--rh); border-top: var(--rh) solid #f9c44a; }
-.leaderboard .rank-num {
-  position: relative;
+
+.leaderboard .rank-num{
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   z-index: 1;
   font-size: 12px;
   line-height: 1;
