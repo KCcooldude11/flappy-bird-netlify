@@ -41,9 +41,9 @@
 
   function updateScoreBadge(val) {
     const digits = String(val).length;
-  const base = 56;                                   // base size for 1–2 digits
-  const s = (digits <= 2) ? base : base + (digits - 2) * 18; // grow for 3+ digits
-  scoreEl?.style.setProperty('--s', `${s}px`);
+    // Base size fits 1–2 digits; grow ~14px per extra digit
+    const size = (digits <= 2) ? 44 : 44 + (digits - 2) * 14;
+    scoreEl?.style.setProperty('--score-size', `${size}px`);
   }
 
   // Max vertical move of the gap *center* between consecutive columns

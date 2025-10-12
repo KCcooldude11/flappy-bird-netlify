@@ -98,59 +98,30 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 #hud .center { pointer-events: none; }
 
 #score{
-  /* JS will update --s based on digit count */
-  --s: 56px;                           /* overall scale */
-  --ratioX: 0.82;                      /* skinnier */
-  --ratioY: 1.28;                      /* taller */
+  --score-size: 56px;    /* JS adjusts this when digits grow */
+  --ratioX: 0.82;        /* skinnier */
+  --ratioY: 1.28;        /* taller */
 
   position: relative;
-  width: calc(var(--s) * var(--ratioX));
-  height: calc(var(--s) * var(--ratioY));
-  transform: rotate(45deg);            /* square -> diamond */
-  border-radius: 14px;                 /* soft corners on the diamond */
-  background: #f9c44a;                 /* golden fill */
-  box-shadow: 0 8px 18px rgba(0,0,0,.22);
+  width:  calc(var(--score-size) * var(--ratioX));
+  height: calc(var(--score-size) * var(--ratioY));
+  background: #f9c44a;
+  border-radius: 14px;   /* soft corners */
+  box-shadow: 0 6px 14px rgba(0,0,0,.18);
+  transform: rotate(45deg);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
 }
 
-/* dark outer rim */
-#score::before{
-  content:"";
-  position:absolute;
-  inset:-8px;                          /* thickness of the rim */
-  border-radius: 18px;
-  background:#5b281e;                  /* deep brown rim */
-  z-index:-1;
-}
-
-/* light inner diamond (the “facet”) */
-#score::after{
-  content:"";
-  position:absolute;
-  inset:18%;
-  border-radius:10px;
-  background:#ffef9a;                  /* pale yellow center */
-  /* very subtle four-way shading for a gem look */
-  background:
-    conic-gradient(from 45deg,
-      rgba(255,255,255,.35) 0 25%,
-      rgba(255,255,255,0)   0 50%,
-      rgba(0,0,0,.08)       0 75%,
-      rgba(0,0,0,0)         0 100%),
-    #ffef9a;
-}
-
-/* Upright number */
+/* keep the number upright */
 #score .txt{
   transform: rotate(-45deg);
-  line-height:1;
-  font-size: calc(var(--s) * 0.46);   /* scales with the badge */
-  min-width: 1ch;
+  line-height: 1;
+  font-size: calc(var(--score-size) * 0.50);
   text-align: center;
-  display: inline-block;
+  min-width: 1ch;
 }
 
 #best {
