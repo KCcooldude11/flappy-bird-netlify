@@ -331,7 +331,7 @@
       const centerY = (minY + maxY) / 2;
       const jitter = (Math.random() * 0.4 - 0.2) * (maxY - minY);
       const my = Math.round(centerY + jitter);
-      const size = Math.max(68, Math.round(28*S));
+      const size = Math.max(35, Math.round(28*S));
       medallions.push({ x:mx, y:my, size, r:Math.round(size*0.42), taken:false });
       nextMedalColumn += 10 + (Math.floor(Math.random()*5) - 2);
     }
