@@ -312,15 +312,17 @@ refreshNameUI();
   ctx.clip();
   ctx.imageSmoothingEnabled = false;
 
+  const topStop = limit - bleed;
+
   // draw full tiles bottom-up
   let cursorY = y + h - tileH;
   const step  = tileH - overlap;
 
-  while (cursorY + tileH <= (limit - bleed)) {
-    ctx.drawImage(segTile, x, cursorY, drawW, tileH);
-    cursorY -= step;
-    if (cursorY + tileH <= y) break;
-  }
+  while (cursorY + tileH > topStop) {
+  ctx.drawImage(segTile, x, cursorY, drawW, tileH);
+  cursorY -= step;
+  if (cursorY + tileH <= y) break;
+}
 
   // final gap below the cap → draw the special last tile to fill exactly
   const remaining = Math.max(0, (limit - bleed) - cursorY);
