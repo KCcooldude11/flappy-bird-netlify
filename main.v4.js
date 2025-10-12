@@ -287,40 +287,58 @@ refreshNameUI();
   }
 
     function drawStackUp(x, y, w, h, capNudgeY = 0) {
-      const { tileH, capH, sx } = scaledHeightsF();
-      if (!segReady.tile || tileH <= 0 || w <= 0 || h <= 0) return;
+  const { tileH, lastH, capH, sx } = scaledHeightsF();
+  if (!segReady.tile || tileH <= 0 || w <= 0 || h <= 0) return;
 
-      const overlap = 1;
-      const drawW = segTile.width * sx;
-      const capY  = y + capNudgeY;
+  const drawW   = (segTile.width || w) * sx;
+  const capY    = y + capNudgeY;
+  const limit   = capY + (segReady.cap ? capH : 0);       // tiles must not cross this
+  const overlap = 1;
+  const bleed   = Math.max(1, Math.round((window.devicePixelRatio || 1)));
 
-      // --- NEW: pad the clip to cover nudged cap + 1–2px outline (DPR-safe)
-      const pad = Math.max(2, Math.ceil((window.devicePixelRatio || 1)));
-      // include whichever is higher: the top of the rect or the nudged cap
-      const clipTop    = Math.min(y, capY);
-      const clipBottom = Math.max(y + h, capY + (segReady.cap ? capH : 0));
-      const clipX = Math.floor(x) - pad;
-      const clipY = Math.floor(clipTop) - pad;
-      const clipW = Math.ceil(w) + pad * 2;
-      const clipH = Math.ceil(clipBottom - clipTop) + pad * 2;
+  // generous clip so outlines never get cut
+  const pad = Math.max(2, Math.ceil((window.devicePixelRatio || 1)));
+  const clipTop    = Math.min(y, capY);
+  const clipBottom = Math.max(y + h, capY + (segReady.cap ? capH : 0));
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(Math.floor(x) - pad, Math.floor(clipTop) - pad,
+           Math.ceil(w) + pad * 2, Math.ceil(clipBottom - clipTop) + pad * 2);
+  ctx.clip();
+  ctx.imageSmoothingEnabled = false;
 
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(clipX, clipY, clipW, clipH);
-      ctx.clip();
-      ctx.imageSmoothingEnabled = false;
+  // draw full tiles bottom-up
+  let cursorY = y + h - tileH;
+  const step  = tileH - overlap;
 
-      // fill from bottom up (slight overlap to hide seams)
-      let cursorY = y + h - tileH;
-      const limit = capY + (segReady.cap ? capH : 0) - overlap;
-      while (cursorY + tileH > limit) {
-        ctx.drawImage(segTile, x, cursorY, drawW, tileH);
-        cursorY -= (tileH - overlap);
+  while (cursorY + tileH <= (limit - bleed)) {
+    ctx.drawImage(segTile, x, cursorY, drawW, tileH);
+    cursorY -= step;
+    if (cursorY + tileH <= y) break;
+  }
+
+  // final gap below the cap → draw the special last tile to fill exactly
+  const remaining = Math.max(0, (limit - bleed) - cursorY);
+  if (remaining > 0 && cursorY < (limit - bleed)) {
+    // use the special PNG if ready; otherwise fall back to cropping the regular tile
+    if (segReady.last) {
+      // scale/crop so it fits exactly
+      const srcH = segTileLast.height || SEG_SRC_TILE_H;
+      ctx.drawImage(segTileLast, 0, 0, segTileLast.width, srcH, x, cursorY, drawW, remaining);
+    } else {
+      // fallback: crop regular tile’s top to fit
+      const srcY = Math.floor((tileH - remaining) / sx);
+      const srcH2 = Math.max(0, (segTile.height || SEG_SRC_TILE_H) - srcY);
+      if (srcH2 > 0) {
+        ctx.drawImage(segTile, 0, srcY, segTile.width, srcH2, x, cursorY, drawW, remaining);
       }
-
-      if (segReady.cap) ctx.drawImage(segCap, x, capY, drawW, capH);
-      ctx.restore();
     }
+  }
+
+  if (segReady.cap) ctx.drawImage(segCap, x, capY, drawW, capH);
+  ctx.restore();
+}
+
 
 
   // orientation: 'up' grows upward; 'down' is a 180° flip of the rect (top spire)
