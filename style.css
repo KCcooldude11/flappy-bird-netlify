@@ -100,8 +100,12 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 #score {
   --score-size: 44px;            /* JS will bump this for 3+ digits */
   position: relative;
-  width: var(--score-size);
-  height: var(--score-size);
+  --score-w: calc(var(--score-size) * 0.85);
+  --score-h: calc(var(--score-size) * 1.25);
+
+  position: relative;
+  width: var(--score-w);
+  height: var(--score-h);
   background: rgba(249, 196, 74);
   border-radius: 10px;           /* slight rounding looks nice on a diamond */
   box-shadow: 0 2px 8px rgba(0,0,0,.15);
