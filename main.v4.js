@@ -113,6 +113,25 @@ function updateScoreBadge(val){
   const SALEM_INDEX = SKINS.findIndex(s => s.name === 'Salem');
   let skinLocked = false;
 
+  const nameInput    = document.getElementById('username');
+  const nameGoInput  = document.getElementById('username-go');
+  const btnSaveNameGo= document.getElementById('btn-save-name-go');
+
+  function getSavedName() {
+    return (localStorage.getItem('playerName') || '').trim();
+  }
+
+  async function saveName(name) {
+    localStorage.setItem('playerName', name);
+    try {
+      await fetch('/.netlify/functions/register-identity', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ deviceId: ensureDeviceId(), name })
+      });
+    } catch {}
+  }
+
   const skinReady = i => !!(SKINS[i] && SKINS[i].idleReady && SKINS[i].flapReady);
 
   // pick the first ready skin
@@ -148,6 +167,28 @@ function updateScoreBadge(val){
   if (changed && currentSkinIndex === SALEM_INDEX) skinLocked = true; // lock on Orange instead
   return changed;
 }
+
+  const isValidName = (s) => {
+    if (typeof s !== 'string') return false;
+    s = s.trim();
+    if (s.length < 3 || s.length > 16) return false;
+    if (s.toLowerCase() === 'guest') return false;
+    return true;
+  };
+
+  const existing = getSavedName();
+if (nameInput)   nameInput.value   = existing;
+if (nameGoInput) nameGoInput.value = existing;
+
+function refreshNameUI() {
+  const okHome = isValidName(nameInput?.value || '');
+  const okGO   = isValidName(nameGoInput?.value || '');
+  if (btnPlay) btnPlay.disabled = !okHome;
+  if (btnSaveNameGo) btnSaveNameGo.disabled = !okGO;
+}
+nameInput?.addEventListener('input', refreshNameUI);
+nameGoInput?.addEventListener('input', refreshNameUI);
+refreshNameUI();
 
   // ===== Sizing / physics =====
   const DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
@@ -307,16 +348,20 @@ function updateScoreBadge(val){
     return name;
   }
   async function registerIdentityIfNeeded(){
-    const deviceId = ensureDeviceId(); let name = localStorage.getItem('playerName');
-    if (!name) name = getOrAskName();
-    try {
-      await fetch('/.netlify/functions/register-identity', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ deviceId, name })
-      });
-    } catch {}
-    return { deviceId, name };
+  const deviceId = ensureDeviceId();
+  let name = getSavedName();
+  if (!isValidName(name)) {
+    return { deviceId, name: '' };
   }
+  try {
+    await fetch('/.netlify/functions/register-identity', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ deviceId, name })
+    });
+  } catch {}
+  return { deviceId, name };
+}
+
   registerIdentityIfNeeded();
   const DEVICE_ID = ensureDeviceId();
 
@@ -362,14 +407,18 @@ function updateScoreBadge(val){
   function markRunStart(){ runStartTime = performance.now(); }
 
   function start(){
-    resetGame(); markRunStart();
-    state = 'playing';
-    overlay?.classList.add('hide'); overlay?.classList.remove('show');
-    gameoverEl?.classList.add('hide'); gameoverEl?.classList.remove('show');
-    if (goSkin) { goSkin.src = ''; goSkin.classList.add('hide'); }
-    lastTime = performance.now();
-    requestAnimationFrame(loop);
-  }
+  const name = getSavedName();
+  if (!isValidName(name)) { overlay?.classList.add('show'); return; }
+
+  resetGame(); markRunStart();
+  state = 'playing';
+  overlay?.classList.add('hide'); overlay?.classList.remove('show');
+  gameoverEl?.classList.add('hide'); gameoverEl?.classList.remove('show');
+  if (goSkin) { goSkin.src = ''; goSkin.classList.add('hide'); }
+  lastTime = performance.now();
+  requestAnimationFrame(loop);
+}
+
 
   async function gameOver(){
     state = 'gameover';
@@ -398,20 +447,44 @@ function updateScoreBadge(val){
   }
 
   // ===== Input =====
-  window.addEventListener('keydown', (e) => {
+ window.addEventListener('keydown', (e) => {
+  const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+  if (tag === 'input' || tag === 'textarea') return;
+
   if (e.code === 'Space' || e.code === 'ArrowUp') {
     e.preventDefault();
-    if (state === 'playing') flap();     // no starting from Space/ArrowUp
+    if (state === 'playing') flap();
   } else if (e.code === 'Enter') {
     e.preventDefault();
-    if (state !== 'playing') start();    // only Enter (or buttons) can start/restart
+    if (state !== 'playing') {
+      const name = (nameInput?.value || getSavedName()).trim();
+      if (!isValidName(name)) { nameInput?.focus(); return; }
+      saveName(name).then(start);
+    }
   }
 });
+
   canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   if (state === 'playing') flap();
 });
-  btnPlay?.addEventListener('click', (e)=>{ e.preventDefault(); start(); });
+btnPlay?.addEventListener('click', async (e) => {
+  e.preventDefault();
+  const name = (nameInput?.value || '').trim();
+  if (!isValidName(name)) { nameInput?.focus(); return; }
+  await saveName(name);
+  start();
+});
+
+btnSaveNameGo?.addEventListener('click', async (e) => {
+  e.preventDefault();
+  const name = (nameGoInput?.value || '').trim();
+  if (!isValidName(name)) { nameGoInput?.focus(); return; }
+  await saveName(name);
+  btnSaveNameGo.textContent = 'Saved!';
+  setTimeout(() => (btnSaveNameGo.textContent = 'Save'), 900);
+});
+
   btnTry?.addEventListener('click', (e)=>{ e.preventDefault(); start(); });
   btnRestart?.addEventListener('click', (e)=>{ e.preventDefault(); start(); });
 
