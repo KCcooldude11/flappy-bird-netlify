@@ -475,61 +475,58 @@ nextSkinRespectTheoLock(); }
   }
 
   function draw(){
+  // viewport size
+  const vw = W(), vh = H();
 
-    // Background
-    if (bgReady){
-      const scale = Math.max(w / bg.width, h / bg.height);
-      const dw = bg.width * scale, dh = bg.height * scale;
-      const dx = (w - dw)/2, dy = (h - dh)/2;
-      ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(bg, dx, dy, dw, dh); ctx.restore();
-    } else {
-      const g = ctx.createLinearGradient(0,0,0,h);
-      g.addColorStop(0, '#8fd0ff'); g.addColorStop(1, '#bfe8ff');
-      ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-    }
-
-    // Spires
-    for (let p of pipes){
-      drawSpireSegmented(p.x, 0, PIPE_WIDTH(), p.topH, 'down');         // top (hanging)
-      drawSpireSegmented(p.x, p.gapY, PIPE_WIDTH(), h - p.gapY, 'up');  // bottom (growing)
-    }
-
-    // Medallions
-        // Medallions (preserve original aspect ratio; m.size = target height)
-    if (medalReady && medallions.length){
-      const aspect = medalImg.width / medalImg.height; // width / height
-      for (let m of medallions){
-        const hpx = m.size;
-        const wpx = Math.round(hpx * aspect);
-        const dx = Math.round(m.x - wpx / 2);
-        const dy = Math.round(m.y - hpx / 2);
-        ctx.drawImage(medalImg, dx, dy, wpx, hpx);
-      }
-    }
-
-    function currentDrawSize() {
-      const baseH = BIRD_BASE_H();
-      const img   = (bird.flapTimer > 0) ? currentFlapImg : currentIdleImg;
-      const aspect = (img && img.width && img.height) ? (img.width / img.height) : 1;
-      const w = Math.round(baseH * aspect);
-      const h = baseH;
-      return { w, h };
-    }
-
-
-    // Bird
-      ctx.save();
-      ctx.translate(bird.x, bird.y);
-      ctx.rotate(bird.rot * 0.45);
-      const img = (bird.flapTimer > 0) ? currentFlapImg : currentIdleImg;
-      const { w, h } = currentDrawSize();
-      ctx.drawImage(img, -w/2, -h/2, w, h);
-      ctx.restore();
-
-
-    if (state === 'ready'){ overlay?.classList.add('show'); overlay?.classList.remove('hide'); }
+  // Background
+  if (bgReady){
+    const scale = Math.max(vw / bg.width, vh / bg.height);
+    const dw = bg.width * scale, dh = bg.height * scale;
+    const dx = (vw - dw)/2, dy = (vh - dh)/2;
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(bg, dx, dy, dw, dh);
+    ctx.restore();
+  } else {
+    const g = ctx.createLinearGradient(0,0,0,vh);
+    g.addColorStop(0, '#8fd0ff'); g.addColorStop(1, '#bfe8ff');
+    ctx.fillStyle = g; ctx.fillRect(0,0,vw,vh);
   }
+
+  // Spires
+  for (let p of pipes){
+    drawSpireSegmented(p.x, 0, PIPE_WIDTH(), p.topH, 'down');
+    drawSpireSegmented(p.x, p.gapY, PIPE_WIDTH(), vh - p.gapY, 'up');
+  }
+
+  // Medallions
+  if (medalReady && medallions.length){
+    const aspect = medalImg.width / medalImg.height;
+    for (let m of medallions){
+      const hpx = m.size;
+      const wpx = Math.round(hpx * aspect);
+      const dx = Math.round(m.x - wpx / 2);
+      const dy = Math.round(m.y - hpx / 2);
+      ctx.drawImage(medalImg, dx, dy, wpx, hpx);
+    }
+  }
+
+  // Bird (preserve aspect)
+  ctx.save();
+  ctx.translate(bird.x, bird.y);
+  ctx.rotate(bird.rot * 0.45);
+  const img = (bird.flapTimer > 0) ? currentFlapImg : currentIdleImg;
+  const { w: birdW, h: birdH } = currentDrawSize();
+  ctx.drawImage(img, -birdW/2, -birdH/2, birdW, birdH);
+  ctx.restore();
+
+  if (state === 'ready'){
+    overlay?.classList.add('show');
+    overlay?.classList.remove('hide');
+  }
+}
+
 
   function loop(t){
     const dt = Math.min(0.033, (t - lastTime) / 1000 || 0);
