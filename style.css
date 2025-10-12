@@ -32,10 +32,12 @@ html, body { height: 100%; margin: 0; }
 
 /* Character image size inside the card */
 #gameover-skin {
-  width: min(240px, 48vw);
-  height: auto;
   display: block;
-  border-radius: 12px;
+  width: auto;
+  height: auto;
+  max-width: 100%;   /* only shrink if the card is narrower */
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 #gameover > .leaderboard {
