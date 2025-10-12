@@ -143,9 +143,6 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   background: rgba(255,255,255,.95);
   font-size: 16px;
 }
-#btn-play[disabled],
-
-
 
 #best {
   background: rgba(255,255,255,.7);
@@ -243,15 +240,76 @@ kbd {
   box-shadow: 0 10px 30px rgba(0,0,0,.18);
   padding: 10px 12px;
 }
-.lb-head.row {opacity: .7; margin-bottom: 6px; }
-.row {
+
+.leaderboard .lb-head.row { opacity: .7; margin-bottom: 6px; }
+
+.leaderboard .row {
   display: grid;
-  grid-template-columns: 24px 1fr clamp(56px, 22vw, 84px);
+  grid-template-columns: 30px 1fr clamp(56px, 22vw, 84px);
   gap: 8px;
   padding: 6px;
   font-size: 14px;
 }
 
+.leaderboard .lb-head .rank{
+  position: static;
+  width: auto;
+  height: auto;
+  display: block;
+  opacity: .7;
+}
+
+.leaderboard .row:nth-child(odd) { background: rgba(0,0,0,.04); border-radius: 6px; }
+
+/* Rank cell with centered diamond + number */
+.leaderboard .rank {
+  --rw: 8px;   /* diamond half-width */
+  --rh: 12px;  /* diamond half-height */
+  position: relative;
+  width: 30px;
+  height: calc(var(--rh) * 2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: .85;
+}
+.leaderboard .rank-badge {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 0; height: 0;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,.18));
+  z-index: 0;
+}
+.leaderboard .rank-badge::before,
+.leaderboard .rank-badge::after {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--rw));
+  border-left:  var(--rw) solid transparent;
+  border-right: var(--rw) solid transparent;
+}
+.leaderboard .rank-badge::before { border-bottom: var(--rh) solid #f9c44a; }
+.leaderboard .rank-badge::after  { top: var(--rh); border-top: var(--rh) solid #f9c44a; }
+.leaderboard .rank-num {
+  position: relative;
+  z-index: 1;
+  font-size: 12px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* Name & score cells */
+.leaderboard .name  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.leaderboard .score { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ---------- Small screens ---------- */
+@media (max-width: 360px) {
+  #game { width: 360px; height: 600px; }
+  .leaderboard { width: 94vw; }
+  .leaderboard .row { grid-template-columns: 26px 1fr clamp(52px, 24vw, 78px); }
+}
 .profile-line{
   display:flex;
   align-items:center;
@@ -316,60 +374,4 @@ kbd {
   height: auto;                /* preserve aspect */
   margin: 6px auto 0;
   image-rendering: auto;       /* or 'pixelated' if you like the chunky look */
-}
-
-.rank {
-  position: relative;
-  display: inline-block;
-  width: 30px; 
-  height: 20px;
-  text-align: center;
-}
-
-.rank-badge {
-  /* half-width & half-height of the diamond */
-  --rw: 8px;   /* horizontal half-width (keeps it small) */
-  --rh: 12px;  /* vertical half-height */
-  position: absolute;
-  left: 50%; top: 50%;
-  width: 0; height: 0;
-  transform: translate(-50%, -50%);
-  filter: drop-shadow(0 3px 6px rgba(0,0,0,.18));
-  z-index: 0;
-}
-.rank-badge::before,
-.rank-badge::after {
-  content: "";
-  position: absolute;
-  left: calc(-1 * var(--rw));
-  border-left:  var(--rw) solid transparent;
-  border-right: var(--rw) solid transparent;
-}
-.rank-badge::before { border-bottom: var(--rh) solid #f9c44a; }
-.rank-badge::after  { top: var(--rh); border-top: var(--rh) solid #f9c44a; }
-
-/* Rank number on top of the badge */
-.rank-num {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1;
-  font-size: 12px;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.row:nth-child(odd) { background: rgba(0,0,0,.04); border-radius: 6px; }
-.rank  { text-align: right; opacity: .7; }
-.name  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.score { text-align: right; font-variant-numeric: tabular-nums; }
-
-/* ---------- Small screens (optional fixed size) ---------- */
-@media (max-width: 360px) {
-  /* Remove this block if you prefer full-screen on tiny devices */
-  #game { width: 360px; height: 600px; }
-  .leaderboard { width: 94vw; }
-  .row { grid-template-columns: 22px 1fr clamp(52px, 24vw, 78px); }
 }
