@@ -134,40 +134,38 @@
     return n * tileH + capH;
   }
 
-  // Draw the stack "growing up" inside (x,y,w,h): tiles first, then cap at top.
-  function drawStackUp(x, y, w, h) {
-    const { tileH, capH, sx } = scaledHeightsF();
+    function drawStackUp(x, y, w, h) {
+    const { tileH, capH, sx } = scaledHeightsF();     // keep your existing scaledHeightsF()
     if (!segReady.tile || tileH <= 0 || w <= 0 || h <= 0) return;
 
-    // clip to target rect
+    const overlap = 1;                                 // 1px overlap to hide seams
+    const drawW = segTile.width * sx;
+    const capY  = y;                                   // cap sits at the top of the rect
+
     ctx.save();
     ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    ctx.imageSmoothingEnabled = false;                 // sharper tiles; also helps seams
 
-    // keep edges crisp and avoid seams
-    ctx.imageSmoothingEnabled = false;
-
-    const drawW = segTile.width * sx;                  // float draw width
-    const usable = Math.max(0, h - capH);
-    const nTiles = Math.max(0, Math.floor(usable / tileH + 1e-6));
-
-    // tiles stack from bottom up, stop right under the cap
+    // Draw tiles from the bottom upward, letting them overlap *into* the cap zone a hair.
     let cursorY = y + h - tileH;
-    for (let i = 0; i < nTiles; i++) {
+    const limit = capY + capH - overlap;               // stop when top tile reaches under cap
+    while (cursorY + tileH > limit) {
       ctx.drawImage(segTile, x, cursorY, drawW, tileH);
-      cursorY -= tileH;
+      cursorY -= (tileH - overlap);                    // step upward with overlap
     }
-    // cap sits flush at the top (the "mouth" near the gap)
-    if (segReady.cap) ctx.drawImage(segCap, x, y, drawW, capH);
+
+    // Cap last (on top of tiles)
+    if (segReady.cap) ctx.drawImage(segCap, x, capY, drawW, capH);
 
     ctx.restore();
   }
 
-  // orientation: 'up' grows upward, 'down' hangs down but drawn as a 180° flip
+  // orientation: 'up' grows upward; 'down' is a 180° flip of the rect (top spire)
   function drawSpireSegmented(x, y, w, h, orientation = 'up') {
     if (orientation === 'up') {
       drawStackUp(x, y, w, h);
     } else {
-      // 180° flip of the whole rect, then reuse the "up" routine
+      // Flip the whole rect 180° so the same "grow up" logic applies, and overlap still tucks under its cap
       ctx.save();
       ctx.translate(x + w, y + h);
       ctx.scale(-1, -1);
@@ -175,7 +173,6 @@
       ctx.restore();
     }
   }
-
   // ===== Leaderboard / identity =====
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
