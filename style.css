@@ -98,17 +98,14 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 #hud .center { pointer-events: none; }
 
 #score{
-  /* base dimensions of half-width and half-height of the diamond */
-  --w: 28px;         /* half of width  (skinny)  */
-  --h: 44px;         /* half of height (tall)    */
-
+  --w: 28px;
+  --h: 44px;
   position: relative;
   width: 0;
   height: 0;
+  overflow: visible;                     /* make sure nothing gets clipped */
   filter: drop-shadow(0 6px 14px rgba(0,0,0,.18));
 }
-
-/* top triangle */
 #score::before,
 #score::after{
   content:"";
@@ -116,27 +113,28 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   left: calc(-1 * var(--w));
   border-left:  var(--w) solid transparent;
   border-right: var(--w) solid transparent;
+  z-index: 0;                            /* triangles behind */
 }
-#score::before{
-  border-bottom: var(--h) solid #f9c44a;   /* top half */
-}
-/* bottom triangle */
-#score::after{
+#score::before{ border-bottom: var(--h) solid #f9c44a; }
+#score::after {
   top: var(--h);
-  border-top: var(--h) solid #f9c44a;      /* bottom half */
+  border-top: var(--h) solid #f9c44a;
 }
 
-/* number centered, upright */
+/* number */
 #score .txt{
   position:absolute;
-  left:  calc(-1 * var(--w));         /* center over total width (2w) */
+  z-index: 1;                            /* text on top */
+  left:  calc(-1 * var(--w));
   width: calc(2 * var(--w));
-  top:   var(--h);                    /* middle in vertical axis */
-  transform: translateY(-50%);        /* exact center vertically */
+  top:   var(--h);
+  transform: translateY(-50%);
   text-align: center;
   line-height: 1;
-  font-size: calc(var(--h) * 0.75);   /* scales with height */
+  font-size: calc(var(--h) * 0.68);      /* slightly smaller to avoid touching edges */
+  pointer-events: none;
 }
+
 
 #best {
   background: rgba(255,255,255,.7);
