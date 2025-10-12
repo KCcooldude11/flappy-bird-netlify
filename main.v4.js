@@ -21,7 +21,7 @@
   const scoreEl    = document.getElementById('score');
   const bestEl     = document.getElementById('best');
   // Max vertical move of the gap *center* between consecutive columns
-  const MAX_CENTER_DELTA = () => Math.round(0.65 * PIPE_GAP()); // ~65% of gap per column (tweak)
+  const MAX_CENTER_DELTA = () => Math.round(0.99 * PIPE_GAP()); // ~65% of gap per column (tweak)
 
 
   // ===== Assets =====
@@ -267,7 +267,7 @@
   // Medallions
   let medallions = []; // {x,y,size,r,taken}
   let columnsSpawned = 0;
-  let nextMedalColumn = 10;
+  let nextMedalColumn = 16;
 
   // ===== Core helpers =====
   function resetGame(){
@@ -276,7 +276,7 @@
   bird.vy = 0; bird.rot = 0; bird.flapTimer = 0; bird.r = BIRD_R();
   pipes = []; lastPipeAt = 0; score = 0;
   if (scoreEl) scoreEl.textContent = '0';
-  medallions = []; columnsSpawned = 0; nextMedalColumn = 10;
+  medallions = []; columnsSpawned = 0; nextMedalColumn = 16;
 
   // skins: always start as Apple again and unlock
   skinLocked = false;
