@@ -313,6 +313,8 @@ refreshNameUI();
   ctx.clip();
   ctx.imageSmoothingEnabled = false;
 
+  const topStop = limit - bleed;
+
   // draw full tiles bottom-up
   let cursorY = y + h - tileH;
   const step  = tileH - overlap;
