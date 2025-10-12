@@ -253,17 +253,41 @@ kbd {
 }
 
 .profile-line{
-  display:flex; align-items:center; gap:8px;
-  margin-top: 6px;
-  font-size: 18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;   /* centers username + icon as a group */
+  gap:8px;
+  width:100%;
+  margin-top:6px;
+  font-size:18px;
+}
+.username-label{
+  text-align:center;        /* centers the text itself */
+  font-weight:700;
 }
 
 .icon-btn{
-  border:0; background:transparent; cursor:pointer;
-  font-size: 18px; line-height: 1;
-  padding: 4px 6px; border-radius: 8px;
+  display:inline-flex;       /* center the SVG inside the button */
+  align-items:center;
+  justify-content:center;
+  width:28px;
+  height:28px;
+  border:0;
+  background:transparent;
+  cursor:pointer;
+  border-radius:8px;
+  color:#333;                /* icon color (black/grey) */
+  line-height:1;
+  padding:0;
 }
+
 .icon-btn:hover{ background: rgba(0,0,0,.06); }
+
+.icon-btn svg{
+  width:18px;
+  height:18px;
+  fill:currentColor;         /* uses .icon-btn color */
+}
 
 #rename-dlg{
   border:0; padding:0;
