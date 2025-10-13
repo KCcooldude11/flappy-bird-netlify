@@ -97,7 +97,6 @@ function updateScoreBadge(val){
   // ===== Skins queue (pickup cycles to next) =====
   const SKINS = [
   { name:'Apple', idle:'./assets/Apple_Fly.png',  flap:'./assets/Apple_Regular.png' },
-    { name:'Merrikh', idle:'./assets/Merrikh_Fly.png', flap:'./assets/Merrikh_Regular.png'},
   { name:'Comet', idle:'./assets/Comet_Fly.png',  flap:'./assets/Comet_Regular.png' },
   { name:'Theo',  idle:'./assets/Theo_Fly.png',   flap:'./assets/Theo_Regular.png' },
   { name:'Orange',  idle:'./assets/Orange_Fly.png',   flap:'./assets/Orange_Regular.png', scale: 0.95},
@@ -107,6 +106,7 @@ function updateScoreBadge(val){
   { name:'Roni', idle:'./assets/Roni_Fly.png', flap:'./assets/Roni_Regular.png'},
   { name:'Knogle', idle:'./assets/Knogle_Fly.png', flap:'./assets/Knogle_Regular.png', scale: 1.08},
   { name:'Orchard', idle:'./assets/Orchard_Fly.png', flap:'./assets/Orchard_Regular.png', scale: 1.08},
+  { name:'Merrikh', idle:'./assets/Merrikh_Fly.png', flap:'./assets/Merrikh_Regular.png', scale: 1.08},
 
 ];
   for (const s of SKINS) {
