@@ -271,6 +271,11 @@ function drawThemeBg(themeNum, alpha) {
   // cap at 1.5x to reduce work while still looking crisp
   return Math.min(DPR, 1.5);
 }
+
+function getBgForTheme(t) {
+  return t === 1 ? bg1 : (t === 2 ? bg2 : bg3);
+}
+
   function ensureBgCached(themeIndex, vw, vh) {
     const img = getBgForTheme(themeIndex);
     if (!img || !img.width || !img.height) return null;
