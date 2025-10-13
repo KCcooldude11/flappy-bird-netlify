@@ -84,6 +84,25 @@ function updateScoreBadge(val){
   segTile.onload = () => segReady.tile = true;
   segCap.onload  = () => segReady.cap  = true;
 
+  // ===== Coins =====
+const coinImg = new Image(); coinImg.src = './assets/coin.png';
+let coinReady = false; coinImg.onload = () => coinReady = true;
+
+let coins = [];              // {x,y,size,r,taken}
+let columnsSpawned = 0;      // you already have this
+let nextCoinColumn = 18 + Math.floor(Math.random() * 23); // first in [18..40]
+
+// call like your other API helpers
+async function postCoins(deviceId, delta){
+  try {
+    await fetch('/.netlify/functions/submit-coin', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ deviceId, delta })
+    });
+  } catch (e) { /* swallow — offline ok */ }
+}
+
 //test
   function nextMedalJump() {
     // returns an integer in [13, 20]
@@ -406,12 +425,13 @@ refreshNameUI();
   let lastPipeAt = 0;
   let lastTime = 0;
   let score = 0;
+  let coinsSession = 0;
+  window.coinsSession = () => coinsSession; // call in DevTools to see current run's coins
   let best = Number(localStorage.getItem('flappy-best') || 0);
   if (bestEl) bestEl.textContent = 'Best: ' + best;
 
   // Medallions
   let medallions = []; // {x,y,size,r,taken}
-  let columnsSpawned = 0;
   let nextMedalColumn = 16;
 
   // ===== Core helpers =====
@@ -425,6 +445,8 @@ refreshNameUI();
   updateScoreBadge(0);
 
   medallions = []; columnsSpawned = 0; nextMedalColumn = 16;
+  coins = [];
+  nextCoinColumn = 18 + Math.floor(Math.random() * 23); // first coin in [18..40]
 
   // skins: always start as Apple again and unlock
   skinLocked = false;
@@ -556,67 +578,91 @@ btnPlay?.addEventListener('click', async (e) => {
 
   // ===== Pipes / medallions =====
   function spawnPipePair(){
-  const marginTop = Math.round(40*S), marginBot = Math.round(40*S);
-  const maxTopRaw = H() - marginBot - PIPE_GAP() - marginTop;
+    const marginTop = Math.round(40*S), marginBot = Math.round(40*S);
+    const maxTopRaw = H() - marginBot - PIPE_GAP() - marginTop;
 
-  // 1) initial random top-of-gap
-  let topY = marginTop + Math.random() * Math.max(40*S, maxTopRaw);
+    // 1) initial random top-of-gap
+    let topY = marginTop + Math.random() * Math.max(40*S, maxTopRaw);
 
-  const prev = pipes[pipes.length - 1];
+    const prev = pipes[pipes.length - 1];
 
-  // 2) quantize to tiles+cap (so art stacks cleanly)
-  if (segReady.tile){
-    const qTop = quantizeSpireHeight(topY);
-    const desiredBottomH = H() - (qTop + PIPE_GAP());
-    const qBottom = quantizeSpireHeight(desiredBottomH);
-    const total = qTop + PIPE_GAP() + qBottom;
-    if (total <= H() - marginBot) topY = qTop;
-  }
-
-  // 3) limit how much the *center of the gap* can move from the last column
-  if (prev){
-    const prevCenter = prev.topH + PIPE_GAP()/2;
-    let   thisCenter = topY      + PIPE_GAP()/2;
-    const lim = MAX_CENTER_DELTA();
-
-    if (thisCenter > prevCenter + lim) thisCenter = prevCenter + lim;
-    if (thisCenter < prevCenter - lim) thisCenter = prevCenter - lim;
-
-    // convert center back to topY and keep within margins
-    topY = thisCenter - PIPE_GAP()/2;
-    topY = Math.max(marginTop, Math.min(topY, H() - marginBot - PIPE_GAP()));
-
-    // re-quantize after clamping so visuals still tile perfectly
+    // 2) quantize to tiles+cap (so art stacks cleanly)
     if (segReady.tile){
       const qTop = quantizeSpireHeight(topY);
       const desiredBottomH = H() - (qTop + PIPE_GAP());
       const qBottom = quantizeSpireHeight(desiredBottomH);
       const total = qTop + PIPE_GAP() + qBottom;
-      topY = (total <= H() - marginBot) ? qTop : topY;
+      if (total <= H() - marginBot) topY = qTop;
+    }
+
+    // 3) limit how much the *center of the gap* can move from the last column
+    if (prev){
+      const prevCenter = prev.topH + PIPE_GAP()/2;
+      let   thisCenter = topY      + PIPE_GAP()/2;
+      const lim = MAX_CENTER_DELTA();
+
+      if (thisCenter > prevCenter + lim) thisCenter = prevCenter + lim;
+      if (thisCenter < prevCenter - lim) thisCenter = prevCenter - lim;
+
+      // convert center back to topY and keep within margins
+      topY = thisCenter - PIPE_GAP()/2;
+      topY = Math.max(marginTop, Math.min(topY, H() - marginBot - PIPE_GAP()));
+
+      // re-quantize after clamping so visuals still tile perfectly
+      if (segReady.tile){
+        const qTop = quantizeSpireHeight(topY);
+        const desiredBottomH = H() - (qTop + PIPE_GAP());
+        const qBottom = quantizeSpireHeight(desiredBottomH);
+        const total = qTop + PIPE_GAP() + qBottom;
+        topY = (total <= H() - marginBot) ? qTop : topY;
+      }
+    }
+
+    // 4) finalize column
+    const x = W() + 40*S;
+    const p = { x, topH: topY, gapY: topY + PIPE_GAP(), scored:false };
+    pipes.push(p);
+    columnsSpawned++;
+
+    // -------- COIN SPAWN (every 15–40 columns), near gap entrance --------
+    if (columnsSpawned >= nextCoinColumn) {
+      // slightly before the pipe so player aims for it
+      const cx = Math.round(x - PIPE_WIDTH() * 0.35);
+
+      // vertically: around gap center with some jitter, kept inside a safe margin
+      const gapTop = p.topH;
+      const gapBot = p.gapY;
+      const centerY = (gapTop + gapBot) / 2;
+
+      const safeMargin = Math.round(0.15 * PIPE_GAP());
+      const minY = gapTop + safeMargin;
+      const maxY = gapBot - safeMargin;
+      const jitter = (Math.random() * 0.5 - 0.25) * (maxY - minY); // ±25% of safe zone
+      const cy = Math.round(Math.max(minY, Math.min(maxY, centerY + jitter)));
+
+      const size = Math.max(22, Math.round(26 * S));
+      coins.push({ x: cx, y: cy, size, r: Math.round(size * 0.45), taken: false });
+
+      // schedule the next coin
+      nextCoinColumn = columnsSpawned + (15 + Math.floor(Math.random() * 26)); // [15..40]
+    }
+
+    // -------- Medallion spawn (unchanged) --------
+    const last = pipes[pipes.length - 2];
+    if (columnsSpawned === nextMedalColumn && last){
+      const mx = Math.round((last.x + x) / 2);
+      const gapTop = last.topH, gapBot = last.gapY;
+      const safeMargin = Math.round(0.2 * PIPE_GAP());
+      const minY = gapTop + safeMargin, maxY = gapBot - safeMargin;
+      const centerY = (minY + maxY) / 2;
+      const jitter = (Math.random() * 0.4 - 0.2) * (maxY - minY);
+      const my = Math.round(centerY + jitter);
+      const size = Math.max(68, Math.round(28*S));
+      medallions.push({ x:mx, y:my, size, r:Math.round(size*0.42), taken:false });
+      nextMedalColumn += nextMedalJump();
     }
   }
 
-  // 4) finalize column
-  const x = W() + 40*S;
-  const p = { x, topH: topY, gapY: topY + PIPE_GAP(), scored:false };
-  pipes.push(p);
-
-  // -------- medallion logic unchanged --------
-  columnsSpawned++;
-  const last = pipes[pipes.length - 2];
-  if (columnsSpawned === nextMedalColumn && last){
-    const mx = Math.round((last.x + x) / 2);
-    const gapTop = last.topH, gapBot = last.gapY;
-    const safeMargin = Math.round(0.2 * PIPE_GAP());
-    const minY = gapTop + safeMargin, maxY = gapBot - safeMargin;
-    const centerY = (minY + maxY) / 2;
-    const jitter = (Math.random() * 0.4 - 0.2) * (maxY - minY);
-    const my = Math.round(centerY + jitter);
-    const size = Math.max(68, Math.round(28*S));
-    medallions.push({ x:mx, y:my, size, r:Math.round(size*0.42), taken:false });
-    nextMedalColumn += nextMedalJump();
-  }
-}
 
 
   function circleRectOverlap(cx, cy, cr, rx, ry, rw, rh){
@@ -674,6 +720,25 @@ nextSkinRespectTheoLock(); }
       }
       medallions = medallions.filter(m => !m.taken && (m.x + m.size) > -40*S);
     }
+
+    // Coins
+if (coins.length){
+  for (let c of coins){
+    c.x -= PIPE_SPEED() * dt;
+
+    // pickup: circle-circle test (bird.r + coin.r)
+    const dx = bird.x - c.x, dy = bird.y - c.y, rr = bird.r + c.r;
+    if (!c.taken && (dx*dx + dy*dy) < rr*rr){
+      c.taken = true;
+      // tell backend "we got 1 coin"
+      postCoins(DEVICE_ID, 1);
+      coinsSession += 1;
+    }
+  }
+  coins = coins.filter(c => !c.taken && (c.x + c.size) > -40 * S);
+}
+
+
   }
 
   function draw(){
@@ -720,6 +785,17 @@ nextSkinRespectTheoLock(); }
       const dx = Math.round(m.x - wpx / 2);
       const dy = Math.round(m.y - hpx / 2);
       ctx.drawImage(medalImg, dx, dy, wpx, hpx);
+    }
+  }
+
+  if (coinReady && coins.length){
+    const aspect = coinImg.width / coinImg.height || 1;
+    for (let c of coins){
+      const hpx = c.size;
+      const wpx = Math.round(hpx * aspect);
+      const dx = Math.round(c.x - wpx / 2);
+      const dy = Math.round(c.y - hpx / 2);
+      ctx.drawImage(coinImg, dx, dy, wpx, hpx);
     }
   }
 
