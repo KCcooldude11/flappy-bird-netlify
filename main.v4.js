@@ -29,6 +29,26 @@
   const renameInput= document.getElementById('rename-input');
   const renameSave = document.getElementById('rename-save');
 
+  const BG_FOCUS = {
+    1: { desktop: { cx: 0.50, cy: 0.50 }, mobile: { cx: 0.50, cy: 0.50 } },
+    // Theme 2: aim a little more to the right to feature the waterfall on mobile
+    2: { desktop: { cx: 0.55, cy: 0.52 }, mobile: { cx: 0.72, cy: 0.52 } },
+    // Theme 3: nudge left to show more of the dragon on mobile
+    3: { desktop: { cx: 0.50, cy: 0.50 }, mobile: { cx: 0.38, cy: 0.50 } },
+  };
+
+  // If you want a tiny extra zoom on mobile to “fill” the focus subject:
+  const BG_EXTRA_ZOOM = {
+    1: { desktop: 1.00, mobile: 1.00 },
+    2: { desktop: 1.00, mobile: 1.08 }, // zoom in a bit on waterfall
+    3: { desktop: 1.00, mobile: 1.04 }, // slight zoom on dragon
+  };
+
+  function isMobileish() {
+  // Simple heuristic; you can switch to CSS breakpoints or UA if you prefer
+  return Math.min(W(), H()) < 700;
+}
+
   // Ensure #score has an inner span we can rotate back upright
   const scoreTextEl = (() => {
     if (!scoreEl) return null;
@@ -43,180 +63,17 @@
     return t;
   })();
 
-  updateScoreBadge(Number(scoreTextEl?.textContent || 0));
-
   function updateScoreBadge(val){
     const digits = String(val).length;
     let w = 28, h = 44;
     if (digits > 2){
       const extra = (digits - 2) * 10;
-      w += extra;
-      h += Math.round(extra * 1.2);
+      w += extra; h += Math.round(extra * 1.2);
     }
     scoreEl?.style.setProperty('--w', `${w}px`);
     scoreEl?.style.setProperty('--h', `${h}px`);
   }
-
-  // Max vertical move of the gap center between consecutive columns
-  const MAX_CENTER_DELTA = () => Math.round(0.99 * PIPE_GAP());
-
-  // ===== Theme assets =====
-  // Backgrounds
-  const bg1 = new Image(); bg1.src = './assets/Untitled_Artwork.png';
-  let bg1Ready = false; bg1.onload = () => bg1Ready = true;
-
-  const bg2 = new Image(); bg2.src = './assets/background2.png';
-  let bg2Ready = false; bg2.onload = () => bg2Ready = true;
-
-  const bg3 = new Image(); bg3.src = './assets/background3.png';
-  let bg3Ready = false; bg3.onload = () => bg3Ready = true;
-
-  // Spires (theme 1)
-  const SEG_SRC_TILE_H = 22; // base tile height in source (used for vertical tiling)
-  const segTile1 = new Image(); segTile1.src = './assets/rock_spire_bottom.png';
-  const segCap1  = new Image(); segCap1.src  = './assets/rock_spire_top.png';
-  const seg1Ready = { tile:false, cap:false };
-  segTile1.onload = () => seg1Ready.tile = true;
-  segCap1.onload  = () => seg1Ready.cap  = true;
-
-  // Spires (theme 2)
-  const segTile2 = new Image(); segTile2.src = './assets/rock_spire_bottom2.png';
-  const segCap2  = new Image(); segCap2.src  = './assets/rock_spire_top2.png';
-  const seg2Ready = { tile:false, cap:false };
-  segTile2.onload = () => seg2Ready.tile = true;
-  segCap2.onload  = () => seg2Ready.cap  = true;
-
-  // Spires (theme 3)
-  const segTile3 = new Image(); segTile3.src = './assets/rock_spire_bottom3.png';
-  const segCap3  = new Image(); segCap3.src  = './assets/rock_spire_top3.png';
-  const seg3Ready = { tile:false, cap:false };
-  segTile3.onload = () => seg3Ready.tile = true;
-  segCap3.onload  = () => seg3Ready.cap  = true;
-
-  const TOP_CAP_NUDGE = -6;
-
-  // ===== Theme state & crossfade =====
-  let theme = 1; // 1,2,3
-  let transition = null; // { from:1, to:2, start:number }
-  const THEME_THRESHOLDS = [100, 200]; // score gates for theme2, theme3
-  const THEME_FADE_MS = 1500;
-
-  function themeFadeProgress(now){
-    if (!transition) return 0;
-    const t = Math.min(1, (now - transition.start) / THEME_FADE_MS);
-    return t * t * (3 - 2 * t); // smoothstep
-  }
-
-  function bgForTheme(id){
-    return id === 1 ? bg1 : id === 2 ? bg2 : bg3;
-  }
-  function bgReadyForTheme(id){
-    return id === 1 ? bg1Ready : id === 2 ? bg2Ready : bg3Ready;
-  }
-  function spireSetForTheme(id){
-    if (id === 1) return {tile:segTile1, cap:segCap1, ready:seg1Ready};
-    if (id === 2) return {tile:segTile2, cap:segCap2, ready:seg2Ready};
-    return {tile:segTile3, cap:segCap3, ready:seg3Ready};
-  }
-
-  // ===== Medallion assets =====
-  function nextMedalJump(){ return 13 + Math.floor(Math.random() * 8); }
-  const medalImg = new Image(); medalImg.src = './assets/medallion.png';
-  let medalReady = false; medalImg.onload = () => medalReady = true;
-
-  // ===== Skins queue (pickup cycles to next) =====
-  const SKINS = [
-    { name:'Apple',  idle:'./assets/Apple_Fly.png',  flap:'./assets/Apple_Regular.png' },
-    { name:'Comet',  idle:'./assets/Comet_Fly.png',  flap:'./assets/Comet_Regular.png' },
-    { name:'Theo',   idle:'./assets/Theo_Fly.png',   flap:'./assets/Theo_Regular.png' },
-    { name:'Orange', idle:'./assets/Orange_Fly.png', flap:'./assets/Orange_Regular.png', scale:0.95 },
-    { name:'Lottie', idle:'./assets/Lottie_Fly.png', flap:'./assets/Lottie_Regular.png' },
-    { name:'Clovia', idle:'./assets/Clovia_Fly.png', flap:'./assets/Clovia_Regular.png' },
-    { name:'Salem',  idle:'./assets/Salem_Fly.png',  flap:'./assets/Salem_Regular.png',  scale:1.08 },
-    { name:'Roni',   idle:'./assets/Roni_Fly.png',   flap:'./assets/Roni_Regular.png' },
-    { name:'Knogle', idle:'./assets/Knogle_Fly.png', flap:'./assets/Knogle_Regular.png', scale:1.08 },
-    { name:'Orchard',idle:'./assets/Orchard_Fly.png',flap:'./assets/Orchard_Regular.png',scale:1.08 },
-  ];
-  for (const s of SKINS){
-    s.idleImg = new Image(); s.flapImg = new Image();
-    s.idleReady = false; s.flapReady = false;
-    s.idleImg.onload = () => s.idleReady = true;
-    s.flapImg.onload = () => s.flapReady = true;
-    s.idleImg.onerror = () => s.idleReady = false;
-    s.flapImg.onerror = () => s.flapReady = false;
-    s.idleImg.src = s.idle; s.flapImg.src = s.flap;
-  }
-  const APPLE_INDEX   = SKINS.findIndex(s => s.name === 'Apple');
-  const ORCHARD_INDEX = SKINS.findIndex(s => s.name === 'Orchard');
-  let skinLocked = false;
-
-  const nameInput = document.getElementById('username');
-
-  function getSavedName(){ return (localStorage.getItem('playerName') || '').trim(); }
-  const skinScale = i => (SKINS[i] && typeof SKINS[i].scale === 'number') ? SKINS[i].scale : 1;
-  function currentSkinScale(){ return skinScale(currentSkinIndex); }
-
-  async function saveName(name){
-    localStorage.setItem('playerName', name);
-    try {
-      await fetch('/.netlify/functions/register-identity', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ deviceId: ensureDeviceId(), name })
-      });
-    } catch {}
-  }
-
-  const skinReady = i => !!(SKINS[i] && SKINS[i].idleReady && SKINS[i].flapReady);
-
-  let currentSkinIndex = 0;
-  for (let i = 0; i < SKINS.length; i++){ if (skinReady(i)) { currentSkinIndex = i; break; } }
-  if (APPLE_INDEX >= 0 && skinReady(APPLE_INDEX)) currentSkinIndex = APPLE_INDEX;
-
-  let currentIdleImg = SKINS[currentSkinIndex].idleImg;
-  let currentFlapImg = SKINS[currentSkinIndex].flapImg;
-
-  function switchToSkin(i){
-    if (!skinReady(i)) return false;
-    currentSkinIndex = i;
-    currentIdleImg = SKINS[i].idleImg;
-    currentFlapImg = SKINS[i].flapImg;
-    bird.r = Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale());
-    return true;
-  }
-
-  function nextSkin(){
-    const start = (currentSkinIndex + 1) % SKINS.length;
-    for (let k = 0; k < SKINS.length; k++){
-      const idx = (start + k) % SKINS.length;
-      if (switchToSkin(idx)) return true;
-    }
-    return false;
-  }
-  function nextSkinRespectTheoLock(){
-    if (skinLocked) return false;
-    const changed = nextSkin();
-    if (changed && currentSkinIndex === ORCHARD_INDEX) skinLocked = true;
-    return changed;
-  }
-
-  const isValidName = (s) => {
-    if (typeof s !== 'string') return false;
-    s = s.trim();
-    if (s.length < 3 || s.length > 16) return false;
-    if (s.toLowerCase() === 'guest') return false;
-    return true;
-  };
-
-  const existing = getSavedName();
-  if (nameInput) nameInput.value = existing;
-  if (goNameEl)  goNameEl.textContent = existing || 'Player';
-
-  function refreshNameUI(){
-    const okHome = isValidName(nameInput?.value || '');
-    if (btnPlay) btnPlay.disabled = !okHome;
-  }
-  nameInput?.addEventListener('input', refreshNameUI);
-  refreshNameUI();
+  updateScoreBadge(Number(scoreTextEl?.textContent || 0));
 
   // ===== Sizing / physics =====
   const DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
@@ -243,17 +100,13 @@
   const PIPE_GAP   = () => Math.round(160 * S);
   const PIPE_INTERVAL = 1500; // ms
   const PIPE_WIDTH = () => Math.round(70 * S);
-
   const BIRD_BASE_H = () => Math.round(100 * S);
   const BIRD_R = () => Math.round(BIRD_BASE_H() * 0.20);
 
-  function currentDrawSize(){
-    const baseH  = BIRD_BASE_H() * currentSkinScale();
-    const img    = (bird?.flapTimer > 0) ? currentFlapImg : currentIdleImg;
-    const aspect = (img && img.width && img.height) ? (img.width / img.height) : 1;
-    return { w: Math.round(baseH * aspect), h: Math.round(baseH) };
-  }
+  // Max vertical move of the gap *center* between consecutive columns
+  const MAX_CENTER_DELTA = () => Math.round(0.99 * PIPE_GAP());
 
+  // Collision tuning
   const HIT_INSET_X = () => Math.round(PIPE_WIDTH() * 0.14);
   const CAP_INSET_Y = () => Math.round(8 * S);
 
@@ -262,30 +115,113 @@
     bird.x = BIRD_X();
     bird.r = Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale());
     if (state !== 'playing') bird.y = Math.round(H()/2 - 80*S);
+    invalidateBgCache();
   });
 
-  // ===== Quantize helpers per theme =====
-  function scaledHeightsFTheme(tileImg, capImg){
-    const sx = (tileImg && tileImg.width) ? (PIPE_WIDTH() / tileImg.width) : 1;
-    const tileH = SEG_SRC_TILE_H * sx;
-    const capH  = (capImg?.height || 0) * sx;
+  // ===== Assets (Backgrounds per theme) =====
+  const bg1 = new Image(); bg1.src = './assets/Untitled_Artwork.png';
+  const bg2 = new Image(); bg2.src = './assets/background2.png';
+  const bg3 = new Image(); bg3.src = './assets/background3.png';
+
+  let bg1Ready=false, bg2Ready=false, bg3Ready=false;
+  bg1.onload = () => bg1Ready = true;
+  bg2.onload = () => bg2Ready = true;
+  bg3.onload = () => bg3Ready = true;
+
+  // ===== Spire art per theme (tile + cap) =====
+  const SEG_SRC_TILE_H = 22; // source px for tiling math (used only for scale calc fallback)
+  const TOP_CAP_NUDGE  = -6;
+
+  const segTile1 = new Image(); segTile1.src = './assets/rock_spire_bottom.png';
+  const segCap1  = new Image(); segCap1.src  = './assets/rock_spire_top.png';
+
+  const segTile2 = new Image(); segTile2.src = './assets/rock_spire_bottom2.png';
+  const segCap2  = new Image(); segCap2.src  = './assets/rock_spire_top2.png';
+
+  const segTile3 = new Image(); segTile3.src = './assets/rock_spire_bottom3.png';
+  const segCap3  = new Image(); segCap3.src  = './assets/rock_spire_top3.png';
+
+  const ready1 = { tile:false, cap:false };
+  const ready2 = { tile:false, cap:false };
+  const ready3 = { tile:false, cap:false };
+  segTile1.onload=()=>ready1.tile=true; segCap1.onload=()=>ready1.cap=true;
+  segTile2.onload=()=>ready2.tile=true; segCap2.onload=()=>ready2.cap=true;
+  segTile3.onload=()=>ready3.tile=true; segCap3.onload=()=>ready3.cap=true;
+
+  // current active spire images (swapped when theme finalizes)
+  let segTile = segTile1, segCap = segCap1;
+  let segReady = ready1;
+
+  function segScaleX(imgTile) {
+    if (!imgTile.width) return 1;
+    return PIPE_WIDTH() / imgTile.width;
+  }
+  function scaledHeightsF(imgTile, imgCap) {
+    const sx = segScaleX(imgTile);
+    const tileH = (imgTile?.height ? imgTile.height : SEG_SRC_TILE_H) * sx;
+    const capH  = (imgCap?.height  || 0) * sx;
     return { tileH, capH, sx };
   }
-  function quantizeSpireHeightTheme(desiredH, tileImg, capImg){
-    const { tileH, capH } = scaledHeightsFTheme(tileImg, capImg);
+  function quantizeSpireHeight(desiredH, imgTile, imgCap){
+    const { tileH, capH } = scaledHeightsF(imgTile, imgCap);
     if (tileH <= 0) return desiredH;
     const usable = Math.max(0, desiredH - capH);
     const n = Math.max(0, Math.floor(usable / tileH + 1e-6));
     return n * tileH + capH;
   }
 
-  // ===== Segmented spire drawing (themed) =====
-  function drawStackUpTheme(x, y, w, h, capNudgeY, tileImg, capImg, ready){
-    const { tileH, capH, sx } = scaledHeightsFTheme(tileImg, capImg);
+  // Draw a background image by cropping around a "focus" point so we can pan.
+function drawFocusedBg(img, themeNum, alpha = 1) {
+  if (!img || !img.width || !img.height) return;
+
+  const vw = W(), vh = H();
+  const mobile = isMobileish();
+  const f = BG_FOCUS[themeNum] ? (mobile ? BG_FOCUS[themeNum].mobile : BG_FOCUS[themeNum].desktop) : { cx: 0.5, cy: 0.5 };
+  const extraZoom = (BG_EXTRA_ZOOM[themeNum] ? (mobile ? BG_EXTRA_ZOOM[themeNum].mobile : BG_EXTRA_ZOOM[themeNum].desktop) : 1) || 1;
+
+  // Scale so the image covers the canvas, then apply extra zoom if any
+  const coverScale = Math.max(vw / img.width, vh / img.height) * extraZoom;
+
+  // The portion of the source we need to sample (in source pixels)
+  const sw = Math.min(img.width,  Math.ceil(vw / coverScale));
+  const sh = Math.min(img.height, Math.ceil(vh / coverScale));
+
+  // Center that crop around the chosen focus point and clamp
+  let sx = Math.round(f.cx * img.width  - sw / 2);
+  let sy = Math.round(f.cy * img.height - sh / 2);
+  sx = Math.max(0, Math.min(sx, img.width  - sw));
+  sy = Math.max(0, Math.min(sy, img.height - sh));
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  // Keep backgrounds smooth (tile art can remain unsmoothed in your spire draw)
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
+  // If you still want a bit of background blur, keep it small
+  // (Large blur on a scaled image increases softness)
+  const localBlur = Math.max(0, Math.min(BLUR_PX, 3)); // clamp 0..3
+  if (localBlur > 0) ctx.filter = `blur(${localBlur}px)`;
+
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, vw, vh);
+
+  ctx.restore();
+}
+
+// Small helper to draw the right background for a theme number (1|2|3)
+function drawThemeBg(themeNum, alpha) {
+  if (themeNum === 1)      drawFocusedBg(bg1, 1, alpha);
+  else if (themeNum === 2) drawFocusedBg(bg2, 2, alpha);
+  else if (themeNum === 3) drawFocusedBg(bg3, 3, alpha);
+}
+
+  function drawStackUp(imgTile, imgCap, ready, x, y, w, h, capNudgeY = 0) {
+    const { tileH, capH, sx } = scaledHeightsF(imgTile, imgCap);
     if (!ready.tile || tileH <= 0 || w <= 0 || h <= 0) return;
 
     const overlap = 1;
-    const drawW = tileImg.width * sx;
+    const drawW = imgTile.width * sx;
     const capY  = y + capNudgeY;
 
     const pad = Math.max(2, Math.ceil((window.devicePixelRatio || 1)));
@@ -304,24 +240,87 @@
 
     let cursorY = y + h - tileH;
     const limit = capY + (ready.cap ? capH : 0) - overlap;
-    while (cursorY + tileH > limit){
-      ctx.drawImage(tileImg, x, cursorY, drawW, tileH);
+    while (cursorY + tileH > limit) {
+      ctx.drawImage(imgTile, x, cursorY, drawW, tileH);
       cursorY -= (tileH - overlap);
     }
-
-    if (ready.cap) ctx.drawImage(capImg, x, capY, drawW, capH);
+    if (ready.cap) ctx.drawImage(imgCap, x, capY, drawW, capH);
     ctx.restore();
   }
 
-  function drawSpireSegmentedTheme(x, y, w, h, orientation, tileImg, capImg, ready){
-    if (orientation === 'up'){
-      drawStackUpTheme(x, y, w, h, 0, tileImg, capImg, ready);
+  function drawSpireSegmented(x, y, w, h, orientation = 'up') {
+    if (orientation === 'up') {
+      drawStackUp(segTile, segCap, segReady, x, y, w, h, 0);
     } else {
       ctx.save();
       ctx.translate(x + w, y + h);
       ctx.scale(-1, -1);
-      drawStackUpTheme(0, 0, w, h, TOP_CAP_NUDGE, tileImg, capImg, ready);
+      drawStackUp(segTile, segCap, segReady, 0, 0, w, h, TOP_CAP_NUDGE);
       ctx.restore();
+    }
+  }
+
+  // ===== Background cache (per theme) =====
+  const bgCache = {
+    1: { w: 0, h: 0, dpr: 0, canvas: null },
+    2: { w: 0, h: 0, dpr: 0, canvas: null },
+    3: { w: 0, h: 0, dpr: 0, canvas: null },
+  };
+  function getBgForTheme(t) { return t===1?bg1 : t===2?bg2 : bg3; }
+  function ensureBgCached(themeIndex, vw, vh) {
+  const img = getBgForTheme(themeIndex);
+  if (!img || !img.width || !img.height) return null;
+
+  const entry = bgCache[themeIndex];
+  const needRebuild = !entry.canvas || entry.w !== vw || entry.h !== vh || entry.dpr !== DPR;
+
+  if (needRebuild) {
+    entry.w = vw; entry.h = vh; entry.dpr = DPR;
+
+    const off = document.createElement('canvas');
+    off.width  = Math.max(1, Math.round(vw * DPR));
+    off.height = Math.max(1, Math.round(vh * DPR));
+    const octx = off.getContext('2d');
+    octx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+    // ---- COVER DRAW (fills whole canvas; crops if needed) ----
+    // Optional: blurred underlay to soften edges/scale artifacts
+    const coverScale = Math.max(vw / img.width, vh / img.height);
+    const pad = BLUR_PX * 2;
+    const blurW = img.width * coverScale + pad * 2;
+    const blurH = img.height * coverScale + pad * 2;
+    const blurX = (vw - blurW) / 2 - pad;
+    const blurY = (vh - blurH) / 2 - pad;
+
+    octx.save();
+    octx.imageSmoothingEnabled = true;
+    octx.imageSmoothingQuality = 'high';
+    octx.filter = `blur(${BLUR_PX}px)`;
+    octx.drawImage(img, blurX, blurY, blurW, blurH);
+    octx.restore();
+
+    // Sharp cover layer (this fully covers the canvas; no letterbox)
+    const drawW = img.width * coverScale;
+    const drawH = img.height * coverScale;
+    const drawX = (vw - drawW) / 2;
+    const drawY = (vh - drawH) / 2;
+
+    octx.save();
+    octx.filter = 'none';
+    octx.imageSmoothingEnabled = true;
+    octx.imageSmoothingQuality = 'high';
+    octx.drawImage(img, drawX, drawY, drawW, drawH);
+    octx.restore();
+
+    entry.canvas = off;
+  }
+  return entry.canvas;
+}
+
+  function invalidateBgCache() {
+    for (const k in bgCache) {
+      bgCache[k].canvas = null;
+      bgCache[k].w = bgCache[k].h = bgCache[k].dpr = 0;
     }
   }
 
@@ -369,9 +368,7 @@
   async function registerIdentityIfNeeded(){
     const deviceId = ensureDeviceId();
     let name = getSavedName();
-    if (!isValidName(name)) {
-      return { deviceId, name: '' };
-    }
+    if (!isValidName(name)) return { deviceId, name: '' };
     try {
       await fetch('/.netlify/functions/register-identity', {
         method:'POST', headers:{'Content-Type':'application/json'},
@@ -383,6 +380,99 @@
   registerIdentityIfNeeded();
   const DEVICE_ID = ensureDeviceId();
 
+  // ===== Skins queue (pickup cycles to next) =====
+  const SKINS = [
+    { name:'Apple',  idle:'./assets/Apple_Fly.png',  flap:'./assets/Apple_Regular.png' },
+    { name:'Comet',  idle:'./assets/Comet_Fly.png',  flap:'./assets/Comet_Regular.png' },
+    { name:'Theo',   idle:'./assets/Theo_Fly.png',   flap:'./assets/Theo_Regular.png' },
+    { name:'Orange', idle:'./assets/Orange_Fly.png', flap:'./assets/Orange_Regular.png', scale: 0.95 },
+    { name:'Lottie', idle:'./assets/Lottie_Fly.png', flap:'./assets/Lottie_Regular.png' },
+    { name:'Clovia', idle:'./assets/Clovia_Fly.png', flap:'./assets/Clovia_Regular.png' },
+    { name:'Salem',  idle:'./assets/Salem_Fly.png',  flap:'./assets/Salem_Regular.png',  scale: 1.08 },
+    { name:'Roni',   idle:'./assets/Roni_Fly.png',   flap:'./assets/Roni_Regular.png' },
+    { name:'Knogle', idle:'./assets/Knogle_Fly.png', flap:'./assets/Knogle_Regular.png', scale: 1.08 },
+    { name:'Orchard',idle:'./assets/Orchard_Fly.png',flap:'./assets/Orchard_Regular.png',scale: 1.08 },
+    { name:'Merrikh',idle:'./assets/Merrikh_Fly.png',flap:'./assets/Merrikh_Regular.png',scale: 1.08 },
+
+  ];
+  for (const s of SKINS) {
+    s.idleImg = new Image(); s.flapImg = new Image();
+    s.idleReady = false; s.flapReady = false;
+    s.idleImg.onload = () => s.idleReady = true;
+    s.flapImg.onload = () => s.flapReady = true;
+    s.idleImg.onerror = () => s.idleReady = false;
+    s.flapImg.onerror = () => s.flapReady = false;
+    s.idleImg.src = s.idle; s.flapImg.src = s.flap;
+  }
+  const APPLE_INDEX   = SKINS.findIndex(s => s.name === 'Apple');
+  const MERRIKH_INDEX = SKINS.findIndex(s => s.name === 'Merrikh');
+  let skinLocked = false;
+
+  const nameInput = document.getElementById('username');
+  function getSavedName() { return (localStorage.getItem('playerName') || '').trim(); }
+  const skinScale = i => (SKINS[i] && typeof SKINS[i].scale === 'number') ? SKINS[i].scale : 1;
+  function currentSkinScale(){ return skinScale(currentSkinIndex); }
+  async function saveName(name) {
+    localStorage.setItem('playerName', name);
+    try {
+      await fetch('/.netlify/functions/register-identity', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ deviceId: ensureDeviceId(), name })
+      });
+    } catch {}
+  }
+  const skinReady = i => !!(SKINS[i] && SKINS[i].idleReady && SKINS[i].flapReady);
+
+  let currentSkinIndex = 0;
+  for (let i = 0; i < SKINS.length; i++) if (skinReady(i)) { currentSkinIndex = i; break; }
+  if (APPLE_INDEX >= 0 && skinReady(APPLE_INDEX)) currentSkinIndex = APPLE_INDEX;
+
+  let currentIdleImg = SKINS[currentSkinIndex].idleImg;
+  let currentFlapImg = SKINS[currentSkinIndex].flapImg;
+
+  function switchToSkin(i){
+    if (!skinReady(i)) return false;
+    currentSkinIndex = i;
+    currentIdleImg = SKINS[i].idleImg;
+    currentFlapImg = SKINS[i].flapImg;
+    bird.r = Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale());
+    return true;
+  }
+  function nextSkin(){
+    const start = (currentSkinIndex + 1) % SKINS.length;
+    for (let k = 0; k < SKINS.length; k++){
+      const idx = (start + k) % SKINS.length;
+      if (switchToSkin(idx)) return true;
+    }
+    return false;
+  }
+  function nextSkinRespectTheoLock(){
+    if (skinLocked) return false;
+    const changed = nextSkin();
+    if (changed && currentSkinIndex === MERRIKH_INDEX) skinLocked = true;
+    return changed;
+  }
+
+  const isValidName = (s) => {
+    if (typeof s !== 'string') return false;
+    s = s.trim();
+    if (s.length < 3 || s.length > 16) return false;
+    if (s.toLowerCase() === 'guest') return false;
+    return true;
+  };
+
+  const existing = getSavedName();
+  if (nameInput) nameInput.value = existing;
+  if (goNameEl)  goNameEl.textContent = existing || 'Player';
+
+  function refreshNameUI() {
+    const okHome = isValidName(nameInput?.value || '');
+    if (btnPlay) btnPlay.disabled = !okHome;
+  }
+  nameInput?.addEventListener('input', refreshNameUI);
+  refreshNameUI();
+
   // ===== Game state =====
   let state = 'ready'; // ready | playing | gameover
   let bird  = {
@@ -393,30 +483,40 @@
   let pipes = [];
   let lastPipeAt = 0;
   let lastTime = 0;
+  let frameNow = 0; // single timestamp per frame
   let score = 0;
   let best = Number(localStorage.getItem('flappy-best') || 0);
   if (bestEl) bestEl.textContent = 'Best: ' + best;
 
+  // Theme transition state
+  let theme = 1;
+  const THEME_THRESHOLDS = [100, 200]; // 1->2 at 100, 2->3 at 200
+  const THEME_FADE_MS = 800;
+  let transition = null; // {from,to,start}
+
   // Medallions
+  function nextMedalJump() { return 13 + Math.floor(Math.random() * 8); } // [13..20]
+  const medalImg = new Image(); medalImg.src = './assets/medallion.png';
+  let medalReady = false; medalImg.onload = () => medalReady = true;
+
   let medallions = []; // {x,y,size,r,taken}
   let columnsSpawned = 0;
   let nextMedalColumn = 16;
 
   // ===== Core helpers =====
   function resetGame(){
-    // bird & world
     bird.r = Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale());
     bird.x = BIRD_X(); bird.y = Math.round(H()/2 - 80*S);
     bird.vy = 0; bird.rot = 0; bird.flapTimer = 0;
     pipes = []; lastPipeAt = 0; score = 0;
     if (scoreTextEl) scoreTextEl.textContent = '0';
     updateScoreBadge(0);
-
     medallions = []; columnsSpawned = 0; nextMedalColumn = 16;
 
     // theme reset
-    theme = 1;
-    transition = null;
+    theme = 1; transition = null;
+    segTile = segTile1; segCap = segCap1; segReady = ready1;
+    invalidateBgCache();
 
     // skins: always start as Apple again and unlock
     skinLocked = false;
@@ -430,12 +530,11 @@
   }
 
   let runStartTime = 0;
-  function markRunStart(){ runStartTime = performance.now(); }
+  function markRunStart(){ runStartTime = frameNow; }
 
   function start(){
     const name = getSavedName();
     if (!isValidName(name)) { overlay?.classList.add('show'); return; }
-
     resetGame(); markRunStart();
     state = 'playing';
     overlay?.classList.add('hide'); overlay?.classList.remove('show');
@@ -448,7 +547,7 @@
   async function gameOver(){
     state = 'gameover';
     if (score > best){ best = score; localStorage.setItem('flappy-best', String(best)); bestEl && (bestEl.textContent = 'Best: ' + best); }
-    const playMs = Math.round(performance.now() - runStartTime);
+    const playMs = Math.round(frameNow - runStartTime);
     const result = await postScore(DEVICE_ID, score, playMs);
     if (result?.error) console.warn('submit-score error:', result.error);
     await loadLeaderboard();
@@ -474,23 +573,17 @@
     const ok = isValidName((renameInput?.value || '').trim());
     if (renameSave) renameSave.disabled = !ok;
   }
-  // Open dialog with current name
   btnEditName?.addEventListener('click', () => {
     if (!renameDlg) return;
     const current = getSavedName();
-    if (renameInput) {
-      renameInput.value = current || '';
-      renameInput.select();
-    }
+    if (renameInput) { renameInput.value = current || ''; renameInput.select(); }
     refreshRenameUI();
     renameDlg.showModal();
   });
-  // Live validation
   renameInput?.addEventListener('input', refreshRenameUI);
-  // Handle Save (form submit)
   renameForm?.addEventListener('submit', async (e) => {
     const submitterId = e.submitter?.id;
-    if (submitterId !== 'rename-save') return;
+    if (submitterId !== 'rename-save') return; // cancel button path
     e.preventDefault();
     const name = (renameInput?.value || '').trim();
     if (!isValidName(name)) { renameInput?.focus(); return; }
@@ -516,11 +609,7 @@
       }
     }
   });
-
-  canvas.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    if (state === 'playing') flap();
-  });
+  canvas.addEventListener('pointerdown', (e) => { e.preventDefault(); if (state === 'playing') flap(); });
   btnPlay?.addEventListener('click', async (e) => {
     e.preventDefault();
     const name = (nameInput?.value || '').trim();
@@ -531,56 +620,48 @@
   btnTry?.addEventListener('click', (e)=>{ e.preventDefault(); start(); });
   btnRestart?.addEventListener('click', (e)=>{ e.preventDefault(); start(); });
 
-  // ===== Pipes / medallions =====
+  // ===== Pipes / Medallions =====
   function spawnPipePair(){
     const marginTop = Math.round(40*S), marginBot = Math.round(40*S);
     const maxTopRaw = H() - marginBot - PIPE_GAP() - marginTop;
 
-    // initial random top-of-gap
     let topY = marginTop + Math.random() * Math.max(40*S, maxTopRaw);
     const prev = pipes[pipes.length - 1];
 
-    // choose current theme assets for quantization
-    const {tile, cap, ready} = spireSetForTheme(theme);
-
-    // quantize to tiles+cap (so art stacks cleanly) for the *current theme*
-    if (ready.tile){
-      const qTop = quantizeSpireHeightTheme(topY, tile, cap);
+    // quantize to current theme's tiles
+    if (segReady.tile){
+      const qTop = quantizeSpireHeight(topY, segTile, segCap);
       const desiredBottomH = H() - (qTop + PIPE_GAP());
-      const qBottom = quantizeSpireHeightTheme(desiredBottomH, tile, cap);
+      const qBottom = quantizeSpireHeight(desiredBottomH, segTile, segCap);
       const total = qTop + PIPE_GAP() + qBottom;
       if (total <= H() - marginBot) topY = qTop;
     }
 
-    // limit center delta vs previous column
     if (prev){
       const prevCenter = prev.topH + PIPE_GAP()/2;
       let   thisCenter = topY      + PIPE_GAP()/2;
       const lim = MAX_CENTER_DELTA();
-
       if (thisCenter > prevCenter + lim) thisCenter = prevCenter + lim;
       if (thisCenter < prevCenter - lim) thisCenter = prevCenter - lim;
 
       topY = thisCenter - PIPE_GAP()/2;
       topY = Math.max(marginTop, Math.min(topY, H() - marginBot - PIPE_GAP()));
 
-      // re-quantize after clamp for visuals
-      if (ready.tile){
-        const qTop = quantizeSpireHeightTheme(topY, tile, cap);
+      if (segReady.tile){
+        const qTop = quantizeSpireHeight(topY, segTile, segCap);
         const desiredBottomH = H() - (qTop + PIPE_GAP());
-        const qBottom = quantizeSpireHeightTheme(desiredBottomH, tile, cap);
+        const qBottom = quantizeSpireHeight(desiredBottomH, segTile, segCap);
         const total = qTop + PIPE_GAP() + qBottom;
         topY = (total <= H() - marginBot) ? qTop : topY;
       }
     }
 
-    // finalize column
     const x = W() + 40*S;
-    const p = { x, topH: topY, gapY: topY + PIPE_GAP(), scored:false, theme };
+    const p = { x, topH: topY, gapY: topY + PIPE_GAP(), scored:false };
     pipes.push(p);
-
-    // medallion logic (unchanged)
     columnsSpawned++;
+
+    // Medallion spawn
     const last = pipes[pipes.length - 2];
     if (columnsSpawned === nextMedalColumn && last){
       const mx = Math.round((last.x + x) / 2);
@@ -604,6 +685,34 @@
   }
 
   // ===== Update / Draw / Loop =====
+  function currentDrawSize() {
+    const baseH  = BIRD_BASE_H() * currentSkinScale();
+    const img    = (bird?.flapTimer > 0) ? currentFlapImg : currentIdleImg;
+    const aspect = (img && img.width && img.height) ? (img.width / img.height) : 1;
+    return { w: Math.round(baseH * aspect), h: Math.round(baseH) };
+  }
+
+  function maybeStartThemeFade() {
+    if (transition) return;
+    if (theme === 1 && score >= THEME_THRESHOLDS[0] && bg2Ready) {
+      transition = { from: 1, to: 2, start: frameNow };
+    } else if (theme === 2 && score >= THEME_THRESHOLDS[1] && bg3Ready) {
+      transition = { from: 2, to: 3, start: frameNow };
+    }
+  }
+
+  function finalizeThemeIfDone() {
+    if (!transition) return;
+    if (frameNow - transition.start >= THEME_FADE_MS) {
+      theme = transition.to;
+      transition = null;
+      // swap spire art to match new theme
+      if (theme === 2) { segTile = segTile2; segCap = segCap2; segReady = ready2; }
+      else if (theme === 3) { segTile = segTile3; segCap = segCap3; segReady = ready3; }
+      invalidateBgCache();
+    }
+  }
+
   function update(dt){
     if (state !== 'playing') return;
 
@@ -637,26 +746,11 @@
         score += 1;
         if (scoreTextEl) scoreTextEl.textContent = String(score);
         updateScoreBadge(score);
-
-        // Theme transitions: 1->2 at 100, 2->3 at 200 (start fade if assets ready)
-        if (!transition){
-          if (theme === 1 && score >= THEME_THRESHOLDS[0] && bg2Ready){
-            transition = { from:1, to:2, start: performance.now() };
-          } else if (theme === 2 && score >= THEME_THRESHOLDS[1] && bg3Ready){
-            transition = { from:2, to:3, start: performance.now() };
-          }
-        }
+        maybeStartThemeFade();
       }
     }
 
-    // finalize theme after fade completes
-    if (transition){
-      const now = performance.now();
-      if (now - transition.start >= THEME_FADE_MS){
-        theme = transition.to;
-        transition = null;
-      }
-    }
+    finalizeThemeIfDone();
 
     // Medallions
     if (medallions.length){
@@ -669,68 +763,29 @@
     }
   }
 
+  function drawBackground(){
+  if (!transition) {
+    drawThemeBg(theme, 1);
+  } else {
+    const a = Math.min(1, Math.max(0, (frameNow - transition.start) / THEME_FADE_MS));
+    drawThemeBg(transition.from, 1 - a);
+    drawThemeBg(transition.to,     a);
+  }
+}
+
   function draw(){
     const vw = W(), vh = H();
 
-    // ----- Background with cross-fade between themes -----
-    function drawBg(img, blurPx, alpha = 1){
-      if (!img || !img.width || !img.height) return;
-      const scale = Math.max(vw / img.width, vh / img.height);
-      const pad = blurPx * 2;
-      const dw = img.width * scale + pad * 2;
-      const dh = img.height * scale + pad * 2;
-      const dx = (vw - dw) / 2 - pad;
-      const dy = (vh - dh) / 2 - pad;
+    // Background (cached)
+    drawBackground();
 
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.filter = `blur(${BLUR_PX}px)`;
-      ctx.drawImage(img, dx, dy, dw, dh);
-      ctx.restore();
-    }
-
-    if (!transition){
-      // single theme
-      const bg = bgForTheme(theme);
-      const ready = bgReadyForTheme(theme);
-      if (ready) drawBg(bg, BLUR_PX, 1);
-      else {
-        const g = ctx.createLinearGradient(0,0,0,vh);
-        g.addColorStop(0, '#8fd0ff'); g.addColorStop(1, '#bfe8ff');
-        ctx.fillStyle = g; ctx.fillRect(0,0,vw,vh);
-      }
-    } else {
-      // cross-fade
-      const a = themeFadeProgress(performance.now());
-      const a1 = 1 - a, a2 = a;
-      const bgFrom = bgForTheme(transition.from);
-      const bgTo   = bgForTheme(transition.to);
-      if (bgReadyForTheme(transition.from)) drawBg(bgFrom, BLUR_PX, a1);
-      if (bgReadyForTheme(transition.to))   drawBg(bgTo,   BLUR_PX, a2);
-    }
-
-    // ----- Spires (each pipe draws with its own theme) -----
+    // Spires
     for (let p of pipes){
-      const set = spireSetForTheme(p.theme);
-      drawSpireSegmentedTheme(p.x, 0, PIPE_WIDTH(), p.topH, 'down', set.tile, set.cap, set.ready);
-      drawSpireSegmentedTheme(p.x, p.gapY, PIPE_WIDTH(), vh - p.gapY, 'up', set.tile, set.cap, set.ready);
+      drawSpireSegmented(p.x, 0, PIPE_WIDTH(), p.topH, 'down');
+      drawSpireSegmented(p.x, p.gapY, PIPE_WIDTH(), vh - p.gapY, 'up');
     }
 
-    // (Optional) very subtle overlay during fade to tie vibes together
-    if (transition){
-      const a = themeFadeProgress(performance.now());
-      if (a > 0){
-        ctx.save();
-        ctx.globalAlpha = a * 0.06; // subtle
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, vw, vh);
-        ctx.restore();
-      }
-    }
-
-    // ----- Medallions -----
+    // Medallions
     if (medalReady && medallions.length){
       const aspect = medalImg.width / medalImg.height;
       for (let m of medallions){
@@ -742,7 +797,7 @@
       }
     }
 
-    // ----- Bird (preserve aspect) -----
+    // Bird (preserve aspect)
     ctx.save();
     ctx.translate(bird.x, bird.y);
     ctx.rotate(bird.rot * 0.45);
@@ -758,6 +813,7 @@
   }
 
   function loop(t){
+    frameNow = t; // single timestamp used everywhere this frame
     const dt = Math.min(0.033, (t - lastTime) / 1000 || 0);
     lastTime = t;
     update(dt);
@@ -768,3 +824,4 @@
   // First paint
   draw();
 })();
+
