@@ -266,56 +266,55 @@ function drawThemeBg(themeNum, alpha) {
     2: { w: 0, h: 0, dpr: 0, canvas: null },
     3: { w: 0, h: 0, dpr: 0, canvas: null },
   };
-  function getBgForTheme(t) { return t===1?bg1 : t===2?bg2 : bg3; }
-  function ensureBgCached(themeIndex, vw, vh) {
-  const img = getBgForTheme(themeIndex);
-  if (!img || !img.width || !img.height) return null;
 
-  const entry = bgCache[themeIndex];
-  const needRebuild = !entry.canvas || entry.w !== vw || entry.h !== vh || entry.dpr !== DPR;
-
-  if (needRebuild) {
-    entry.w = vw; entry.h = vh; entry.dpr = DPR;
-
-    const off = document.createElement('canvas');
-    off.width  = Math.max(1, Math.round(vw * DPR));
-    off.height = Math.max(1, Math.round(vh * DPR));
-    const octx = off.getContext('2d');
-    octx.setTransform(DPR, 0, 0, DPR, 0, 0);
-
-    // ---- COVER DRAW (fills whole canvas; crops if needed) ----
-    // Optional: blurred underlay to soften edges/scale artifacts
-    const coverScale = Math.max(vw / img.width, vh / img.height);
-    const pad = BLUR_PX * 2;
-    const blurW = img.width * coverScale + pad * 2;
-    const blurH = img.height * coverScale + pad * 2;
-    const blurX = (vw - blurW) / 2 - pad;
-    const blurY = (vh - blurH) / 2 - pad;
-
-    octx.save();
-    octx.imageSmoothingEnabled = true;
-    octx.imageSmoothingQuality = 'high';
-    octx.filter = `blur(${BLUR_PX}px)`;
-    octx.drawImage(img, blurX, blurY, blurW, blurH);
-    octx.restore();
-
-    // Sharp cover layer (this fully covers the canvas; no letterbox)
-    const drawW = img.width * coverScale;
-    const drawH = img.height * coverScale;
-    const drawX = (vw - drawW) / 2;
-    const drawY = (vh - drawH) / 2;
-
-    octx.save();
-    octx.filter = 'none';
-    octx.imageSmoothingEnabled = true;
-    octx.imageSmoothingQuality = 'high';
-    octx.drawImage(img, drawX, drawY, drawW, drawH);
-    octx.restore();
-
-    entry.canvas = off;
-  }
-  return entry.canvas;
+  function offscreenDpr() {
+  // cap at 1.5x to reduce work while still looking crisp
+  return Math.min(DPR, 1.5);
 }
+  function ensureBgCached(themeIndex, vw, vh) {
+    const img = getBgForTheme(themeIndex);
+    if (!img || !img.width || !img.height) return null;
+
+    const entry = bgCache[themeIndex];
+    const ODR = offscreenDpr();
+    const needRebuild =
+      !entry.canvas || entry.w !== vw || entry.h !== vh || entry.dpr !== ODR;
+
+    if (needRebuild) {
+      entry.w = vw; entry.h = vh; entry.dpr = ODR;
+
+      const off = document.createElement('canvas');
+      off.width  = Math.max(1, Math.round(vw * ODR));
+      off.height = Math.max(1, Math.round(vh * ODR));
+      const octx = off.getContext('2d');
+      octx.setTransform(ODR, 0, 0, ODR, 0, 0);
+
+      // ---- Focused crop (same math as drawFocusedBg), but done once into cache ----
+      const mobile = isMobileish();
+      const f = BG_FOCUS[themeIndex] ? (mobile ? BG_FOCUS[themeIndex].mobile : BG_FOCUS[themeIndex].desktop) : { cx: 0.5, cy: 0.5 };
+      const extraZoom = (BG_EXTRA_ZOOM[themeIndex] ? (mobile ? BG_EXTRA_ZOOM[themeIndex].mobile : BG_EXTRA_ZOOM[themeIndex].desktop) : 1) || 1;
+
+      const coverScale = Math.max(vw / img.width, vh / img.height) * extraZoom;
+      const sw = Math.min(img.width,  Math.ceil(vw / coverScale));
+      const sh = Math.min(img.height, Math.ceil(vh / coverScale));
+
+      let sx = Math.round(f.cx * img.width  - sw / 2);
+      let sy = Math.round(f.cy * img.height - sh / 2);
+      sx = Math.max(0, Math.min(sx, img.width  - sw));
+      sy = Math.max(0, Math.min(sy, img.height - sh));
+
+      // one-time light blur to soften scale artifacts (cheap because it’s cached)
+      octx.imageSmoothingEnabled = true;
+      octx.imageSmoothingQuality = 'high';
+      const localBlur = Math.max(0, Math.min(BLUR_PX, 2));
+      if (localBlur > 0) octx.filter = `blur(${localBlur}px)`;
+
+      octx.drawImage(img, sx, sy, sw, sh, 0, 0, vw, vh);
+
+      entry.canvas = off;
+    }
+    return entry.canvas;
+  }
 
   function invalidateBgCache() {
     for (const k in bgCache) {
@@ -763,15 +762,29 @@ function drawThemeBg(themeNum, alpha) {
     }
   }
 
-  function drawBackground(){
+  function drawBackground() {
+  const vw = W(), vh = H();
+
   if (!transition) {
-    drawThemeBg(theme, 1);
-  } else {
-    const a = Math.min(1, Math.max(0, (frameNow - transition.start) / THEME_FADE_MS));
-    drawThemeBg(transition.from, 1 - a);
-    drawThemeBg(transition.to,     a);
+    const can = ensureBgCached(theme, vw, vh);
+    if (can) ctx.drawImage(can, 0, 0, vw, vh);
+    return;
+  }
+
+  // crossfade cached canvases
+  const a = Math.min(1, Math.max(0, (frameNow - transition.start) / THEME_FADE_MS));
+  const fromCan = ensureBgCached(transition.from, vw, vh);
+  const toCan   = ensureBgCached(transition.to,   vw, vh);
+
+  if (fromCan) ctx.drawImage(fromCan, 0, 0, vw, vh);
+  if (toCan) {
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.drawImage(toCan, 0, 0, vw, vh);
+    ctx.restore();
   }
 }
+
 
   function draw(){
     const vw = W(), vh = H();
