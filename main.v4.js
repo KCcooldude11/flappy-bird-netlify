@@ -20,17 +20,16 @@
   const btnRestart = document.getElementById('btn-restart');
   const scoreEl    = document.getElementById('score');
   const bestEl     = document.getElementById('best');
-  const goSkin = document.getElementById('gameover-skin');
-  const BLUR_PX = 6;
-  const goNameEl     = document.getElementById('go-username');
-  const btnEditName  = document.getElementById('btn-edit-name');
-  const renameDlg    = document.getElementById('rename-dlg');
-  const renameForm   = document.getElementById('rename-form');
-  const renameInput  = document.getElementById('rename-input');
-  const renameSave   = document.getElementById('rename-save');
+  const goSkin     = document.getElementById('gameover-skin');
+  const BLUR_PX    = 6;
+  const goNameEl   = document.getElementById('go-username');
+  const btnEditName= document.getElementById('btn-edit-name');
+  const renameDlg  = document.getElementById('rename-dlg');
+  const renameForm = document.getElementById('rename-form');
+  const renameInput= document.getElementById('rename-input');
+  const renameSave = document.getElementById('rename-save');
 
-
-    // Ensure #score has an inner span we can rotate back upright
+  // Ensure #score has an inner span we can rotate back upright
   const scoreTextEl = (() => {
     if (!scoreEl) return null;
     let t = scoreEl.querySelector('.txt');
@@ -46,70 +45,99 @@
 
   updateScoreBadge(Number(scoreTextEl?.textContent || 0));
 
-
-function updateScoreBadge(val){
-  const digits = String(val).length;
-
-  // Base (fits 1–2 digits)
-  let w = 28;   // half-width
-  let h = 44;   // half-height
-
-  // Grow for 3+ digits (keeps it narrow & tall)
-  if (digits > 2){
-    const extra = (digits - 2) * 10;  // tweak if you want more/less growth
-    w += extra;                       // widen a bit for extra digits
-    h += Math.round(extra * 1.2);     // grow height a touch more
+  function updateScoreBadge(val){
+    const digits = String(val).length;
+    let w = 28, h = 44;
+    if (digits > 2){
+      const extra = (digits - 2) * 10;
+      w += extra;
+      h += Math.round(extra * 1.2);
+    }
+    scoreEl?.style.setProperty('--w', `${w}px`);
+    scoreEl?.style.setProperty('--h', `${h}px`);
   }
 
-  scoreEl?.style.setProperty('--w', `${w}px`);
-  scoreEl?.style.setProperty('--h', `${h}px`);
-}
+  // Max vertical move of the gap center between consecutive columns
+  const MAX_CENTER_DELTA = () => Math.round(0.99 * PIPE_GAP());
 
+  // ===== Theme assets =====
+  // Backgrounds
+  const bg1 = new Image(); bg1.src = './assets/Untitled_Artwork.png';
+  let bg1Ready = false; bg1.onload = () => bg1Ready = true;
 
-  // Max vertical move of the gap *center* between consecutive columns
-  const MAX_CENTER_DELTA = () => Math.round(0.99 * PIPE_GAP()); // ~65% of gap per column (tweak)
+  const bg2 = new Image(); bg2.src = './assets/background2.png';
+  let bg2Ready = false; bg2.onload = () => bg2Ready = true;
 
+  const bg3 = new Image(); bg3.src = './assets/background3.png';
+  let bg3Ready = false; bg3.onload = () => bg3Ready = true;
 
-  // ===== Assets =====
-  const bg = new Image(); bg.src = './assets/Untitled_Artwork.png';
-  let bgReady = false; bg.onload = () => bgReady = true;
+  // Spires (theme 1)
+  const SEG_SRC_TILE_H = 22; // base tile height in source (used for vertical tiling)
+  const segTile1 = new Image(); segTile1.src = './assets/rock_spire_bottom.png';
+  const segCap1  = new Image(); segCap1.src  = './assets/rock_spire_top.png';
+  const seg1Ready = { tile:false, cap:false };
+  segTile1.onload = () => seg1Ready.tile = true;
+  segCap1.onload  = () => seg1Ready.cap  = true;
 
-  const TOP_CAP_NUDGE = -6; 
+  // Spires (theme 2)
+  const segTile2 = new Image(); segTile2.src = './assets/rock_spire_bottom2.png';
+  const segCap2  = new Image(); segCap2.src  = './assets/rock_spire_top2.png';
+  const seg2Ready = { tile:false, cap:false };
+  segTile2.onload = () => seg2Ready.tile = true;
+  segCap2.onload  = () => seg2Ready.cap  = true;
 
-  // Segmented spire art (tile + cap)
-  const SEG_SRC_TILE_H = 22; // px in source
-  const segTile = new Image(); segTile.src = './assets/rock_spire_bottom.png';
-  const segCap  = new Image(); segCap.src  = './assets/rock_spire_top.png';
-  const segReady = { tile:false, cap:false };
-  segTile.onload = () => segReady.tile = true;
-  segCap.onload  = () => segReady.cap  = true;
+  // Spires (theme 3)
+  const segTile3 = new Image(); segTile3.src = './assets/rock_spire_bottom3.png';
+  const segCap3  = new Image(); segCap3.src  = './assets/rock_spire_top3.png';
+  const seg3Ready = { tile:false, cap:false };
+  segTile3.onload = () => seg3Ready.tile = true;
+  segCap3.onload  = () => seg3Ready.cap  = true;
 
+  const TOP_CAP_NUDGE = -6;
 
-  function nextMedalJump() {
-    // returns an integer in [13, 20]
-    return 13 + Math.floor(Math.random() * 8);
+  // ===== Theme state & crossfade =====
+  let theme = 1; // 1,2,3
+  let transition = null; // { from:1, to:2, start:number }
+  const THEME_THRESHOLDS = [100, 200]; // score gates for theme2, theme3
+  const THEME_FADE_MS = 1500;
+
+  function themeFadeProgress(now){
+    if (!transition) return 0;
+    const t = Math.min(1, (now - transition.start) / THEME_FADE_MS);
+    return t * t * (3 - 2 * t); // smoothstep
   }
 
-  // Medallion
+  function bgForTheme(id){
+    return id === 1 ? bg1 : id === 2 ? bg2 : bg3;
+  }
+  function bgReadyForTheme(id){
+    return id === 1 ? bg1Ready : id === 2 ? bg2Ready : bg3Ready;
+  }
+  function spireSetForTheme(id){
+    if (id === 1) return {tile:segTile1, cap:segCap1, ready:seg1Ready};
+    if (id === 2) return {tile:segTile2, cap:segCap2, ready:seg2Ready};
+    return {tile:segTile3, cap:segCap3, ready:seg3Ready};
+  }
+
+  // ===== Medallion assets =====
+  function nextMedalJump(){ return 13 + Math.floor(Math.random() * 8); }
   const medalImg = new Image(); medalImg.src = './assets/medallion.png';
   let medalReady = false; medalImg.onload = () => medalReady = true;
 
   // ===== Skins queue (pickup cycles to next) =====
   const SKINS = [
-  { name:'Apple', idle:'./assets/Apple_Fly.png',  flap:'./assets/Apple_Regular.png' },
-  { name:'Comet', idle:'./assets/Comet_Fly.png',  flap:'./assets/Comet_Regular.png' },
-  { name:'Theo',  idle:'./assets/Theo_Fly.png',   flap:'./assets/Theo_Regular.png' },
-  { name:'Orange',  idle:'./assets/Orange_Fly.png',   flap:'./assets/Orange_Regular.png', scale: 0.95},
-  { name:'Lottie',  idle:'./assets/Lottie_Fly.png',   flap:'./assets/Lottie_Regular.png' },
-  { name:'Clovia',  idle:'./assets/Clovia_Fly.png',   flap:'./assets/Clovia_Regular.png' },
-  { name:'Salem', idle:'./assets/Salem_Fly.png', flap:'./assets/Salem_Regular.png', scale: 1.08 },
-  { name:'Roni', idle:'./assets/Roni_Fly.png', flap:'./assets/Roni_Regular.png'},
-  { name:'Knogle', idle:'./assets/Knogle_Fly.png', flap:'./assets/Knogle_Regular.png', scale: 1.08},
-  { name:'Orchard', idle:'./assets/Orchard_Fly.png', flap:'./assets/Orchard_Regular.png', scale: 1.08},
-  { name:'Merrikh', idle:'./assets/Merrikh_Fly.png', flap:'./assets/Merrikh_Regular.png', scale: 1.08},
-
-];
-  for (const s of SKINS) {
+    { name:'Apple',  idle:'./assets/Apple_Fly.png',  flap:'./assets/Apple_Regular.png' },
+    { name:'Comet',  idle:'./assets/Comet_Fly.png',  flap:'./assets/Comet_Regular.png' },
+    { name:'Theo',   idle:'./assets/Theo_Fly.png',   flap:'./assets/Theo_Regular.png' },
+    { name:'Orange', idle:'./assets/Orange_Fly.png', flap:'./assets/Orange_Regular.png', scale:0.95 },
+    { name:'Lottie', idle:'./assets/Lottie_Fly.png', flap:'./assets/Lottie_Regular.png' },
+    { name:'Clovia', idle:'./assets/Clovia_Fly.png', flap:'./assets/Clovia_Regular.png' },
+    { name:'Salem',  idle:'./assets/Salem_Fly.png',  flap:'./assets/Salem_Regular.png',  scale:1.08 },
+    { name:'Roni',   idle:'./assets/Roni_Fly.png',   flap:'./assets/Roni_Regular.png' },
+    { name:'Knogle', idle:'./assets/Knogle_Fly.png', flap:'./assets/Knogle_Regular.png', scale:1.08 },
+    { name:'Orchard',idle:'./assets/Orchard_Fly.png',flap:'./assets/Orchard_Regular.png',scale:1.08 },
+  ];
+  for (const s of SKINS){
     s.idleImg = new Image(); s.flapImg = new Image();
     s.idleReady = false; s.flapReady = false;
     s.idleImg.onload = () => s.idleReady = true;
@@ -118,31 +146,21 @@ function updateScoreBadge(val){
     s.flapImg.onerror = () => s.flapReady = false;
     s.idleImg.src = s.idle; s.flapImg.src = s.flap;
   }
-    // Indices + lock
-  const APPLE_INDEX = SKINS.findIndex(s => s.name === 'Apple');
-  const MERRIKH_INDEX = SKINS.findIndex(s => s.name === 'Merrikh');
+  const APPLE_INDEX   = SKINS.findIndex(s => s.name === 'Apple');
+  const ORCHARD_INDEX = SKINS.findIndex(s => s.name === 'Orchard');
   let skinLocked = false;
 
-  const nameInput    = document.getElementById('username');
+  const nameInput = document.getElementById('username');
 
-  function getSavedName() {
-    return (localStorage.getItem('playerName') || '').trim();
-  }
+  function getSavedName(){ return (localStorage.getItem('playerName') || '').trim(); }
+  const skinScale = i => (SKINS[i] && typeof SKINS[i].scale === 'number') ? SKINS[i].scale : 1;
+  function currentSkinScale(){ return skinScale(currentSkinIndex); }
 
-  const skinScale = i =>
-  (SKINS[i] && typeof SKINS[i].scale === 'number') ? SKINS[i].scale : 1;
-
-  function currentSkinScale(){
-    return skinScale(currentSkinIndex);
-  }
-
-
-  async function saveName(name) {
+  async function saveName(name){
     localStorage.setItem('playerName', name);
     try {
       await fetch('/.netlify/functions/register-identity', {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json' },
+        method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ deviceId: ensureDeviceId(), name })
       });
     } catch {}
@@ -150,41 +168,36 @@ function updateScoreBadge(val){
 
   const skinReady = i => !!(SKINS[i] && SKINS[i].idleReady && SKINS[i].flapReady);
 
-  // pick the first ready skin
   let currentSkinIndex = 0;
-  for (let i = 0; i < SKINS.length; i++) {
-    if (skinReady(i)) { currentSkinIndex = i; break; }
-  }
-  // if Apple is ready, prefer Apple at startup
+  for (let i = 0; i < SKINS.length; i++){ if (skinReady(i)) { currentSkinIndex = i; break; } }
   if (APPLE_INDEX >= 0 && skinReady(APPLE_INDEX)) currentSkinIndex = APPLE_INDEX;
 
   let currentIdleImg = SKINS[currentSkinIndex].idleImg;
   let currentFlapImg = SKINS[currentSkinIndex].flapImg;
 
   function switchToSkin(i){
-  if (!skinReady(i)) return false;
-  currentSkinIndex = i;
-  currentIdleImg = SKINS[i].idleImg;
-  currentFlapImg = SKINS[i].flapImg;
-  bird.r = Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale()); // refresh radius
-  return true;
-}
-
+    if (!skinReady(i)) return false;
+    currentSkinIndex = i;
+    currentIdleImg = SKINS[i].idleImg;
+    currentFlapImg = SKINS[i].flapImg;
+    bird.r = Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale());
+    return true;
+  }
 
   function nextSkin(){
-  const start = (currentSkinIndex + 1) % SKINS.length;
-  for (let k = 0; k < SKINS.length; k++){
-    const idx = (start + k) % SKINS.length;
-    if (switchToSkin(idx)) return true;
-  }
-  return false;
+    const start = (currentSkinIndex + 1) % SKINS.length;
+    for (let k = 0; k < SKINS.length; k++){
+      const idx = (start + k) % SKINS.length;
+      if (switchToSkin(idx)) return true;
+    }
+    return false;
   }
   function nextSkinRespectTheoLock(){
-  if (skinLocked) return false;
-  const changed = nextSkin();
-  if (changed && currentSkinIndex === MERRIKH_INDEX) skinLocked = true;
-  return changed;
-}
+    if (skinLocked) return false;
+    const changed = nextSkin();
+    if (changed && currentSkinIndex === ORCHARD_INDEX) skinLocked = true;
+    return changed;
+  }
 
   const isValidName = (s) => {
     if (typeof s !== 'string') return false;
@@ -198,14 +211,12 @@ function updateScoreBadge(val){
   if (nameInput) nameInput.value = existing;
   if (goNameEl)  goNameEl.textContent = existing || 'Player';
 
-
-function refreshNameUI() {
-  const okHome = isValidName(nameInput?.value || '');
-  if (btnPlay) btnPlay.disabled = !okHome;
-}
-
-nameInput?.addEventListener('input', refreshNameUI);
-refreshNameUI();
+  function refreshNameUI(){
+    const okHome = isValidName(nameInput?.value || '');
+    if (btnPlay) btnPlay.disabled = !okHome;
+  }
+  nameInput?.addEventListener('input', refreshNameUI);
+  refreshNameUI();
 
   // ===== Sizing / physics =====
   const DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
@@ -224,137 +235,114 @@ refreshNameUI();
   function recomputeScale(){ S = H() / BASE_H; if (!Number.isFinite(S) || S <= 0) S = 1; }
   recomputeScale();
 
-  const START_X_FRAC = 0.28; // start further left
+  const START_X_FRAC = 0.28;
   const BIRD_X   = () => Math.round(W() * START_X_FRAC);
   const GRAVITY  = () => 1200 * S;
   const JUMP_VY  = () => -420  * S;
   const PIPE_SPEED = () => 160 * S;
   const PIPE_GAP   = () => Math.round(160 * S);
   const PIPE_INTERVAL = 1500; // ms
-
   const PIPE_WIDTH = () => Math.round(70 * S);
 
-  // Visual height is fixed for all skins; width varies by sprite aspect.
   const BIRD_BASE_H = () => Math.round(100 * S);
-
-  // Collision radius tied to height (not width) so long sprites aren’t penalized.
   const BIRD_R = () => Math.round(BIRD_BASE_H() * 0.20);
 
-  // Compute current draw size preserving the active image’s aspect ratio.
-  function currentDrawSize() {
-    const baseH  = BIRD_BASE_H() * currentSkinScale();   // <-- scaled height
+  function currentDrawSize(){
+    const baseH  = BIRD_BASE_H() * currentSkinScale();
     const img    = (bird?.flapTimer > 0) ? currentFlapImg : currentIdleImg;
     const aspect = (img && img.width && img.height) ? (img.width / img.height) : 1;
     return { w: Math.round(baseH * aspect), h: Math.round(baseH) };
-  } 
+  }
 
-
-
-  // Collision tuning
   const HIT_INSET_X = () => Math.round(PIPE_WIDTH() * 0.14);
   const CAP_INSET_Y = () => Math.round(8 * S);
 
   window.addEventListener('resize', () => {
-  resizeCanvas(); recomputeScale();
-  bird.x = BIRD_X();
-  bird.r = Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale()); // scaled
-  if (state !== 'playing') bird.y = Math.round(H()/2 - 80*S);
-});
+    resizeCanvas(); recomputeScale();
+    bird.x = BIRD_X();
+    bird.r = Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale());
+    if (state !== 'playing') bird.y = Math.round(H()/2 - 80*S);
+  });
 
-
-
-  // ===== Segmented spire helpers =====
-  function segScaleX() {
-    // scale by width so aspect of art is preserved
-    if (!segTile.width) return 1;
-    return PIPE_WIDTH() / segTile.width;
-  }
-
-  // return *float* heights to avoid cumulative rounding seams
-  function scaledHeightsF() {
-    const sx = segScaleX();
-    const tileH = SEG_SRC_TILE_H * sx;                  // float
-    const capH  = (segCap.height || 0) * sx;            // float
+  // ===== Quantize helpers per theme =====
+  function scaledHeightsFTheme(tileImg, capImg){
+    const sx = (tileImg && tileImg.width) ? (PIPE_WIDTH() / tileImg.width) : 1;
+    const tileH = SEG_SRC_TILE_H * sx;
+    const capH  = (capImg?.height || 0) * sx;
     return { tileH, capH, sx };
   }
-
-  // keep the “quantize to tiles + cap” behavior using float math
-  function quantizeSpireHeight(desiredH) {
-    const { tileH, capH } = scaledHeightsF();
+  function quantizeSpireHeightTheme(desiredH, tileImg, capImg){
+    const { tileH, capH } = scaledHeightsFTheme(tileImg, capImg);
     if (tileH <= 0) return desiredH;
     const usable = Math.max(0, desiredH - capH);
     const n = Math.max(0, Math.floor(usable / tileH + 1e-6));
     return n * tileH + capH;
   }
 
-    function drawStackUp(x, y, w, h, capNudgeY = 0) {
-      const { tileH, capH, sx } = scaledHeightsF();
-      if (!segReady.tile || tileH <= 0 || w <= 0 || h <= 0) return;
+  // ===== Segmented spire drawing (themed) =====
+  function drawStackUpTheme(x, y, w, h, capNudgeY, tileImg, capImg, ready){
+    const { tileH, capH, sx } = scaledHeightsFTheme(tileImg, capImg);
+    if (!ready.tile || tileH <= 0 || w <= 0 || h <= 0) return;
 
-      const overlap = 1;
-      const drawW = segTile.width * sx;
-      const capY  = y + capNudgeY;
+    const overlap = 1;
+    const drawW = tileImg.width * sx;
+    const capY  = y + capNudgeY;
 
-      // --- NEW: pad the clip to cover nudged cap + 1–2px outline (DPR-safe)
-      const pad = Math.max(2, Math.ceil((window.devicePixelRatio || 1)));
-      // include whichever is higher: the top of the rect or the nudged cap
-      const clipTop    = Math.min(y, capY);
-      const clipBottom = Math.max(y + h, capY + (segReady.cap ? capH : 0));
-      const clipX = Math.floor(x) - pad;
-      const clipY = Math.floor(clipTop) - pad;
-      const clipW = Math.ceil(w) + pad * 2;
-      const clipH = Math.ceil(clipBottom - clipTop) + pad * 2;
+    const pad = Math.max(2, Math.ceil((window.devicePixelRatio || 1)));
+    const clipTop    = Math.min(y, capY);
+    const clipBottom = Math.max(y + h, capY + (ready.cap ? capH : 0));
+    const clipX = Math.floor(x) - pad;
+    const clipY = Math.floor(clipTop) - pad;
+    const clipW = Math.ceil(w) + pad * 2;
+    const clipH = Math.ceil(clipBottom - clipTop) + pad * 2;
 
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(clipX, clipY, clipW, clipH);
-      ctx.clip();
-      ctx.imageSmoothingEnabled = false;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(clipX, clipY, clipW, clipH);
+    ctx.clip();
+    ctx.imageSmoothingEnabled = false;
 
-      // fill from bottom up (slight overlap to hide seams)
-      let cursorY = y + h - tileH;
-      const limit = capY + (segReady.cap ? capH : 0) - overlap;
-      while (cursorY + tileH > limit) {
-        ctx.drawImage(segTile, x, cursorY, drawW, tileH);
-        cursorY -= (tileH - overlap);
-      }
-
-      if (segReady.cap) ctx.drawImage(segCap, x, capY, drawW, capH);
-      ctx.restore();
+    let cursorY = y + h - tileH;
+    const limit = capY + (ready.cap ? capH : 0) - overlap;
+    while (cursorY + tileH > limit){
+      ctx.drawImage(tileImg, x, cursorY, drawW, tileH);
+      cursorY -= (tileH - overlap);
     }
 
+    if (ready.cap) ctx.drawImage(capImg, x, capY, drawW, capH);
+    ctx.restore();
+  }
 
-  // orientation: 'up' grows upward; 'down' is a 180° flip of the rect (top spire)
-  function drawSpireSegmented(x, y, w, h, orientation = 'up') {
-    if (orientation === 'up') {
-      drawStackUp(x, y, w, h, 0);
+  function drawSpireSegmentedTheme(x, y, w, h, orientation, tileImg, capImg, ready){
+    if (orientation === 'up'){
+      drawStackUpTheme(x, y, w, h, 0, tileImg, capImg, ready);
     } else {
-      // flip the rect, but nudge the cap upward toward the gap
       ctx.save();
       ctx.translate(x + w, y + h);
       ctx.scale(-1, -1);
-      drawStackUp(0, 0, w, h, TOP_CAP_NUDGE);
+      drawStackUpTheme(0, 0, w, h, TOP_CAP_NUDGE, tileImg, capImg, ready);
       ctx.restore();
     }
   }
+
   // ===== Leaderboard / identity =====
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
   function renderLeaderboard(list){
-  const wrap = document.getElementById('leaderboard-rows'); 
-  if (!wrap) return;
-  if (!Array.isArray(list) || list.length === 0){
-    wrap.innerHTML = `<div style="opacity:.8">No scores yet.</div>`;
-    return;
+    const wrap = document.getElementById('leaderboard-rows'); 
+    if (!wrap) return;
+    if (!Array.isArray(list) || list.length === 0){
+      wrap.innerHTML = `<div style="opacity:.8">No scores yet.</div>`;
+      return;
+    }
+    wrap.innerHTML = list.map((r,i)=>`
+      <div class="row">
+        <span class="rank"><span class="txt">${i+1}</span></span>
+        <span class="name">${escapeHtml(r.name ?? 'Player')}</span>
+        <span class="score">${Number(r.score ?? 0)}</span>
+      </div>`).join('');
   }
-  wrap.innerHTML = list.map((r,i)=>`
-  <div class="row">
-    <span class="rank"><span class="txt">${i+1}</span></span>
-    <span class="name">${escapeHtml(r.name ?? 'Player')}</span>
-    <span class="score">${Number(r.score ?? 0)}</span>
-  </div>`).join('');
-}
   async function postScore(deviceId, score, playMs){
     try {
       const res = await fetch('/.netlify/functions/submit-score', {
@@ -379,29 +367,28 @@ refreshNameUI();
     return id;
   }
   async function registerIdentityIfNeeded(){
-  const deviceId = ensureDeviceId();
-  let name = getSavedName();
-  if (!isValidName(name)) {
-    return { deviceId, name: '' };
+    const deviceId = ensureDeviceId();
+    let name = getSavedName();
+    if (!isValidName(name)) {
+      return { deviceId, name: '' };
+    }
+    try {
+      await fetch('/.netlify/functions/register-identity', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ deviceId, name })
+      });
+    } catch {}
+    return { deviceId, name };
   }
-  try {
-    await fetch('/.netlify/functions/register-identity', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ deviceId, name })
-    });
-  } catch {}
-  return { deviceId, name };
-}
-
   registerIdentityIfNeeded();
   const DEVICE_ID = ensureDeviceId();
 
   // ===== Game state =====
   let state = 'ready'; // ready | playing | gameover
   let bird  = {
-  x:BIRD_X(), y:Math.round(H()/2 - 80*S), vy:0, rot:0, flapTimer:0,
-  r: Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale())
-};
+    x:BIRD_X(), y:Math.round(H()/2 - 80*S), vy:0, rot:0, flapTimer:0,
+    r: Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale())
+  };
 
   let pipes = [];
   let lastPipeAt = 0;
@@ -417,44 +404,46 @@ refreshNameUI();
 
   // ===== Core helpers =====
   function resetGame(){
-  // bird & world
-  bird.r = Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale());
-  bird.x = BIRD_X(); bird.y = Math.round(H()/2 - 80*S);
-  bird.vy = 0; bird.rot = 0; bird.flapTimer = 0;
-  pipes = []; lastPipeAt = 0; score = 0;
-  if (scoreTextEl) scoreTextEl.textContent = '0';
-  updateScoreBadge(0);
+    // bird & world
+    bird.r = Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale());
+    bird.x = BIRD_X(); bird.y = Math.round(H()/2 - 80*S);
+    bird.vy = 0; bird.rot = 0; bird.flapTimer = 0;
+    pipes = []; lastPipeAt = 0; score = 0;
+    if (scoreTextEl) scoreTextEl.textContent = '0';
+    updateScoreBadge(0);
 
-  medallions = []; columnsSpawned = 0; nextMedalColumn = 16;
+    medallions = []; columnsSpawned = 0; nextMedalColumn = 16;
 
-  // skins: always start as Apple again and unlock
-  skinLocked = false;
-  if (APPLE_INDEX >= 0 && skinReady(APPLE_INDEX)) {
-    switchToSkin(APPLE_INDEX);
-  } else {
-    // fallback to first ready skin if Apple isn't ready yet
-    for (let i = 0; i < SKINS.length; i++) {
-      if (skinReady(i)) { switchToSkin(i); break; }
+    // theme reset
+    theme = 1;
+    transition = null;
+
+    // skins: always start as Apple again and unlock
+    skinLocked = false;
+    if (APPLE_INDEX >= 0 && skinReady(APPLE_INDEX)) {
+      switchToSkin(APPLE_INDEX);
+    } else {
+      for (let i = 0; i < SKINS.length; i++) {
+        if (skinReady(i)) { switchToSkin(i); break; }
+      }
     }
   }
-}
 
   let runStartTime = 0;
   function markRunStart(){ runStartTime = performance.now(); }
 
   function start(){
-  const name = getSavedName();
-  if (!isValidName(name)) { overlay?.classList.add('show'); return; }
+    const name = getSavedName();
+    if (!isValidName(name)) { overlay?.classList.add('show'); return; }
 
-  resetGame(); markRunStart();
-  state = 'playing';
-  overlay?.classList.add('hide'); overlay?.classList.remove('show');
-  gameoverEl?.classList.add('hide'); gameoverEl?.classList.remove('show');
-  if (goSkin) { goSkin.src = ''; goSkin.classList.add('hide'); }
-  lastTime = performance.now();
-  requestAnimationFrame(loop);
-}
-
+    resetGame(); markRunStart();
+    state = 'playing';
+    overlay?.classList.add('hide'); overlay?.classList.remove('show');
+    gameoverEl?.classList.add('hide'); gameoverEl?.classList.remove('show');
+    if (goSkin) { goSkin.src = ''; goSkin.classList.add('hide'); }
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+  }
 
   async function gameOver(){
     state = 'gameover';
@@ -465,16 +454,14 @@ refreshNameUI();
     await loadLeaderboard();
     if (goNameEl) goNameEl.textContent = getSavedName() || 'Player';
     if (goSkin) {
-    const skin = SKINS[currentSkinIndex];
-    // prefer the preloaded image src if available
-    const src = (skin?.flapImg && skin.flapImg.src) ? skin.flapImg.src : (skin?.flap || '');
-    goSkin.src = src;
-    goSkin.alt = skin?.name ? `${skin.name} (Regular)` : 'Character';
-    goSkin.classList.remove('hide');
-  }
-
-  gameoverEl?.classList.remove('hide');
-  gameoverEl?.classList.add('show');
+      const skin = SKINS[currentSkinIndex];
+      const src = (skin?.flapImg && skin.flapImg.src) ? skin.flapImg.src : (skin?.flap || '');
+      goSkin.src = src;
+      goSkin.alt = skin?.name ? `${skin.name} (Regular)` : 'Character';
+      goSkin.classList.remove('hide');
+    }
+    gameoverEl?.classList.remove('hide');
+    gameoverEl?.classList.add('show');
   }
 
   function flap(){
@@ -484,141 +471,130 @@ refreshNameUI();
   }
 
   function refreshRenameUI(){
-  const ok = isValidName((renameInput?.value || '').trim());
-  if (renameSave) renameSave.disabled = !ok;
-}
-
-// Open dialog with current name
-btnEditName?.addEventListener('click', () => {
-  if (!renameDlg) return;
-  const current = getSavedName();
-  if (renameInput) {
-    renameInput.value = current || '';
-    renameInput.select();
+    const ok = isValidName((renameInput?.value || '').trim());
+    if (renameSave) renameSave.disabled = !ok;
   }
-  refreshRenameUI();
-  renameDlg.showModal();
-});
-
-// Live validation
-renameInput?.addEventListener('input', refreshRenameUI);
-
-// Handle Save (form submit)
-renameForm?.addEventListener('submit', async (e) => {
-  const submitterId = e.submitter?.id;          // which button was clicked?
-
-  // If it's NOT the Save button, let the <dialog> auto-close (no preventDefault)
-  if (submitterId !== 'rename-save') {
-    return; // Cancel path — browser closes the dialog because method="dialog"
-  }
-
-  // Save path
-  e.preventDefault();                            // stop auto-close while we validate & save
-  const name = (renameInput?.value || '').trim();
-  if (!isValidName(name)) { renameInput?.focus(); return; }
-  await saveName(name);
-  if (goNameEl) goNameEl.textContent = name || 'Player';
-  try { renameDlg?.close(); } catch {}
-});
-
+  // Open dialog with current name
+  btnEditName?.addEventListener('click', () => {
+    if (!renameDlg) return;
+    const current = getSavedName();
+    if (renameInput) {
+      renameInput.value = current || '';
+      renameInput.select();
+    }
+    refreshRenameUI();
+    renameDlg.showModal();
+  });
+  // Live validation
+  renameInput?.addEventListener('input', refreshRenameUI);
+  // Handle Save (form submit)
+  renameForm?.addEventListener('submit', async (e) => {
+    const submitterId = e.submitter?.id;
+    if (submitterId !== 'rename-save') return;
+    e.preventDefault();
+    const name = (renameInput?.value || '').trim();
+    if (!isValidName(name)) { renameInput?.focus(); return; }
+    await saveName(name);
+    if (goNameEl) goNameEl.textContent = name || 'Player';
+    try { renameDlg?.close(); } catch {}
+  });
 
   // ===== Input =====
- window.addEventListener('keydown', (e) => {
-  const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
-  if (tag === 'input' || tag === 'textarea') return;
+  window.addEventListener('keydown', (e) => {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag === 'input' || tag === 'textarea') return;
 
-  if (e.code === 'Space' || e.code === 'ArrowUp') {
-    e.preventDefault();
-    if (state === 'playing') flap();
-  } else if (e.code === 'Enter') {
-    e.preventDefault();
-    if (state !== 'playing') {
-      const name = (nameInput?.value || getSavedName()).trim();
-      if (!isValidName(name)) { nameInput?.focus(); return; }
-      saveName(name).then(start);
+    if (e.code === 'Space' || e.code === 'ArrowUp') {
+      e.preventDefault();
+      if (state === 'playing') flap();
+    } else if (e.code === 'Enter') {
+      e.preventDefault();
+      if (state !== 'playing') {
+        const name = (nameInput?.value || getSavedName()).trim();
+        if (!isValidName(name)) { nameInput?.focus(); return; }
+        saveName(name).then(start);
+      }
     }
-  }
-});
+  });
 
   canvas.addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  if (state === 'playing') flap();
-});
-btnPlay?.addEventListener('click', async (e) => {
-  e.preventDefault();
-  const name = (nameInput?.value || '').trim();
-  if (!isValidName(name)) { nameInput?.focus(); return; }
-  await saveName(name);
-  start();
-});
-
+    e.preventDefault();
+    if (state === 'playing') flap();
+  });
+  btnPlay?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const name = (nameInput?.value || '').trim();
+    if (!isValidName(name)) { nameInput?.focus(); return; }
+    await saveName(name);
+    start();
+  });
   btnTry?.addEventListener('click', (e)=>{ e.preventDefault(); start(); });
   btnRestart?.addEventListener('click', (e)=>{ e.preventDefault(); start(); });
 
   // ===== Pipes / medallions =====
   function spawnPipePair(){
-  const marginTop = Math.round(40*S), marginBot = Math.round(40*S);
-  const maxTopRaw = H() - marginBot - PIPE_GAP() - marginTop;
+    const marginTop = Math.round(40*S), marginBot = Math.round(40*S);
+    const maxTopRaw = H() - marginBot - PIPE_GAP() - marginTop;
 
-  // 1) initial random top-of-gap
-  let topY = marginTop + Math.random() * Math.max(40*S, maxTopRaw);
+    // initial random top-of-gap
+    let topY = marginTop + Math.random() * Math.max(40*S, maxTopRaw);
+    const prev = pipes[pipes.length - 1];
 
-  const prev = pipes[pipes.length - 1];
+    // choose current theme assets for quantization
+    const {tile, cap, ready} = spireSetForTheme(theme);
 
-  // 2) quantize to tiles+cap (so art stacks cleanly)
-  if (segReady.tile){
-    const qTop = quantizeSpireHeight(topY);
-    const desiredBottomH = H() - (qTop + PIPE_GAP());
-    const qBottom = quantizeSpireHeight(desiredBottomH);
-    const total = qTop + PIPE_GAP() + qBottom;
-    if (total <= H() - marginBot) topY = qTop;
-  }
-
-  // 3) limit how much the *center of the gap* can move from the last column
-  if (prev){
-    const prevCenter = prev.topH + PIPE_GAP()/2;
-    let   thisCenter = topY      + PIPE_GAP()/2;
-    const lim = MAX_CENTER_DELTA();
-
-    if (thisCenter > prevCenter + lim) thisCenter = prevCenter + lim;
-    if (thisCenter < prevCenter - lim) thisCenter = prevCenter - lim;
-
-    // convert center back to topY and keep within margins
-    topY = thisCenter - PIPE_GAP()/2;
-    topY = Math.max(marginTop, Math.min(topY, H() - marginBot - PIPE_GAP()));
-
-    // re-quantize after clamping so visuals still tile perfectly
-    if (segReady.tile){
-      const qTop = quantizeSpireHeight(topY);
+    // quantize to tiles+cap (so art stacks cleanly) for the *current theme*
+    if (ready.tile){
+      const qTop = quantizeSpireHeightTheme(topY, tile, cap);
       const desiredBottomH = H() - (qTop + PIPE_GAP());
-      const qBottom = quantizeSpireHeight(desiredBottomH);
+      const qBottom = quantizeSpireHeightTheme(desiredBottomH, tile, cap);
       const total = qTop + PIPE_GAP() + qBottom;
-      topY = (total <= H() - marginBot) ? qTop : topY;
+      if (total <= H() - marginBot) topY = qTop;
+    }
+
+    // limit center delta vs previous column
+    if (prev){
+      const prevCenter = prev.topH + PIPE_GAP()/2;
+      let   thisCenter = topY      + PIPE_GAP()/2;
+      const lim = MAX_CENTER_DELTA();
+
+      if (thisCenter > prevCenter + lim) thisCenter = prevCenter + lim;
+      if (thisCenter < prevCenter - lim) thisCenter = prevCenter - lim;
+
+      topY = thisCenter - PIPE_GAP()/2;
+      topY = Math.max(marginTop, Math.min(topY, H() - marginBot - PIPE_GAP()));
+
+      // re-quantize after clamp for visuals
+      if (ready.tile){
+        const qTop = quantizeSpireHeightTheme(topY, tile, cap);
+        const desiredBottomH = H() - (qTop + PIPE_GAP());
+        const qBottom = quantizeSpireHeightTheme(desiredBottomH, tile, cap);
+        const total = qTop + PIPE_GAP() + qBottom;
+        topY = (total <= H() - marginBot) ? qTop : topY;
+      }
+    }
+
+    // finalize column
+    const x = W() + 40*S;
+    const p = { x, topH: topY, gapY: topY + PIPE_GAP(), scored:false, theme };
+    pipes.push(p);
+
+    // medallion logic (unchanged)
+    columnsSpawned++;
+    const last = pipes[pipes.length - 2];
+    if (columnsSpawned === nextMedalColumn && last){
+      const mx = Math.round((last.x + x) / 2);
+      const gapTop = last.topH, gapBot = last.gapY;
+      const safeMargin = Math.round(0.2 * PIPE_GAP());
+      const minY = gapTop + safeMargin, maxY = gapBot - safeMargin;
+      const centerY = (minY + maxY) / 2;
+      const jitter = (Math.random() * 0.4 - 0.2) * (maxY - minY);
+      const my = Math.round(centerY + jitter);
+      const size = Math.max(68, Math.round(28*S));
+      medallions.push({ x:mx, y:my, size, r:Math.round(size*0.42), taken:false });
+      nextMedalColumn += nextMedalJump();
     }
   }
-
-  // 4) finalize column
-  const x = W() + 40*S;
-  const p = { x, topH: topY, gapY: topY + PIPE_GAP(), scored:false };
-  pipes.push(p);
-
-  // -------- medallion logic unchanged --------
-  columnsSpawned++;
-  const last = pipes[pipes.length - 2];
-  if (columnsSpawned === nextMedalColumn && last){
-    const mx = Math.round((last.x + x) / 2);
-    const gapTop = last.topH, gapBot = last.gapY;
-    const safeMargin = Math.round(0.2 * PIPE_GAP());
-    const minY = gapTop + safeMargin, maxY = gapBot - safeMargin;
-    const centerY = (minY + maxY) / 2;
-    const jitter = (Math.random() * 0.4 - 0.2) * (maxY - minY);
-    const my = Math.round(centerY + jitter);
-    const size = Math.max(68, Math.round(28*S));
-    medallions.push({ x:mx, y:my, size, r:Math.round(size*0.42), taken:false });
-    nextMedalColumn += nextMedalJump();
-  }
-}
-
 
   function circleRectOverlap(cx, cy, cr, rx, ry, rw, rh){
     const nx = Math.max(rx, Math.min(cx, rx + rw));
@@ -661,8 +637,25 @@ btnPlay?.addEventListener('click', async (e) => {
         score += 1;
         if (scoreTextEl) scoreTextEl.textContent = String(score);
         updateScoreBadge(score);
-      }
 
+        // Theme transitions: 1->2 at 100, 2->3 at 200 (start fade if assets ready)
+        if (!transition){
+          if (theme === 1 && score >= THEME_THRESHOLDS[0] && bg2Ready){
+            transition = { from:1, to:2, start: performance.now() };
+          } else if (theme === 2 && score >= THEME_THRESHOLDS[1] && bg3Ready){
+            transition = { from:2, to:3, start: performance.now() };
+          }
+        }
+      }
+    }
+
+    // finalize theme after fade completes
+    if (transition){
+      const now = performance.now();
+      if (now - transition.start >= THEME_FADE_MS){
+        theme = transition.to;
+        transition = null;
+      }
     }
 
     // Medallions
@@ -670,75 +663,99 @@ btnPlay?.addEventListener('click', async (e) => {
       for (let m of medallions){
         m.x -= PIPE_SPEED() * dt;
         const dx = bird.x - m.x, dy = bird.y - m.y, rr = bird.r + m.r;
-        if (!m.taken && (dx*dx + dy*dy) < rr*rr){ m.taken = true;
-nextSkinRespectTheoLock(); }
+        if (!m.taken && (dx*dx + dy*dy) < rr*rr){ m.taken = true; nextSkinRespectTheoLock(); }
       }
       medallions = medallions.filter(m => !m.taken && (m.x + m.size) > -40*S);
     }
   }
 
   function draw(){
-  // viewport size
-  const vw = W(), vh = H();
-
-  // Background
-
-  if (bgReady) {
     const vw = W(), vh = H();
 
-    // same scale math as before
-    const scale = Math.max(vw / bg.width, vh / bg.height);
-    const pad = BLUR_PX * 2; // expand so blur won’t clip
-    const dw = bg.width * scale + pad * 2;
-    const dh = bg.height * scale + pad * 2;
-    const dx = (vw - dw) / 2 - pad;
-    const dy = (vh - dh) / 2 - pad;
+    // ----- Background with cross-fade between themes -----
+    function drawBg(img, blurPx, alpha = 1){
+      if (!img || !img.width || !img.height) return;
+      const scale = Math.max(vw / img.width, vh / img.height);
+      const pad = blurPx * 2;
+      const dw = img.width * scale + pad * 2;
+      const dh = img.height * scale + pad * 2;
+      const dx = (vw - dw) / 2 - pad;
+      const dy = (vh - dh) / 2 - pad;
 
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.filter = `blur(${BLUR_PX}px)`;
+      ctx.drawImage(img, dx, dy, dw, dh);
+      ctx.restore();
+    }
+
+    if (!transition){
+      // single theme
+      const bg = bgForTheme(theme);
+      const ready = bgReadyForTheme(theme);
+      if (ready) drawBg(bg, BLUR_PX, 1);
+      else {
+        const g = ctx.createLinearGradient(0,0,0,vh);
+        g.addColorStop(0, '#8fd0ff'); g.addColorStop(1, '#bfe8ff');
+        ctx.fillStyle = g; ctx.fillRect(0,0,vw,vh);
+      }
+    } else {
+      // cross-fade
+      const a = themeFadeProgress(performance.now());
+      const a1 = 1 - a, a2 = a;
+      const bgFrom = bgForTheme(transition.from);
+      const bgTo   = bgForTheme(transition.to);
+      if (bgReadyForTheme(transition.from)) drawBg(bgFrom, BLUR_PX, a1);
+      if (bgReadyForTheme(transition.to))   drawBg(bgTo,   BLUR_PX, a2);
+    }
+
+    // ----- Spires (each pipe draws with its own theme) -----
+    for (let p of pipes){
+      const set = spireSetForTheme(p.theme);
+      drawSpireSegmentedTheme(p.x, 0, PIPE_WIDTH(), p.topH, 'down', set.tile, set.cap, set.ready);
+      drawSpireSegmentedTheme(p.x, p.gapY, PIPE_WIDTH(), vh - p.gapY, 'up', set.tile, set.cap, set.ready);
+    }
+
+    // (Optional) very subtle overlay during fade to tie vibes together
+    if (transition){
+      const a = themeFadeProgress(performance.now());
+      if (a > 0){
+        ctx.save();
+        ctx.globalAlpha = a * 0.06; // subtle
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, vw, vh);
+        ctx.restore();
+      }
+    }
+
+    // ----- Medallions -----
+    if (medalReady && medallions.length){
+      const aspect = medalImg.width / medalImg.height;
+      for (let m of medallions){
+        const hpx = m.size;
+        const wpx = Math.round(hpx * aspect);
+        const dx = Math.round(m.x - wpx / 2);
+        const dy = Math.round(m.y - hpx / 2);
+        ctx.drawImage(medalImg, dx, dy, wpx, hpx);
+      }
+    }
+
+    // ----- Bird (preserve aspect) -----
     ctx.save();
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.filter = `blur(${BLUR_PX}px)`;   // ← blur only the background
-    ctx.drawImage(bg, dx, dy, dw, dh);
+    ctx.translate(bird.x, bird.y);
+    ctx.rotate(bird.rot * 0.45);
+    const img = (bird.flapTimer > 0) ? currentFlapImg : currentIdleImg;
+    const { w: birdW, h: birdH } = currentDrawSize();
+    ctx.drawImage(img, -birdW/2, -birdH/2, birdW, birdH);
     ctx.restore();
-  } else {
-    const g = ctx.createLinearGradient(0,0,0,vh);
-    g.addColorStop(0, '#8fd0ff'); g.addColorStop(1, '#bfe8ff');
-    ctx.fillStyle = g; ctx.fillRect(0,0,vw,vh);
-  }
 
-  // Spires
-  for (let p of pipes){
-    drawSpireSegmented(p.x, 0, PIPE_WIDTH(), p.topH, 'down');
-    drawSpireSegmented(p.x, p.gapY, PIPE_WIDTH(), vh - p.gapY, 'up');
-  }
-
-  // Medallions
-  if (medalReady && medallions.length){
-    const aspect = medalImg.width / medalImg.height;
-    for (let m of medallions){
-      const hpx = m.size;
-      const wpx = Math.round(hpx * aspect);
-      const dx = Math.round(m.x - wpx / 2);
-      const dy = Math.round(m.y - hpx / 2);
-      ctx.drawImage(medalImg, dx, dy, wpx, hpx);
+    if (state === 'ready'){
+      overlay?.classList.add('show');
+      overlay?.classList.remove('hide');
     }
   }
-
-  // Bird (preserve aspect)
-  ctx.save();
-  ctx.translate(bird.x, bird.y);
-  ctx.rotate(bird.rot * 0.45);
-  const img = (bird.flapTimer > 0) ? currentFlapImg : currentIdleImg;
-  const { w: birdW, h: birdH } = currentDrawSize();
-  ctx.drawImage(img, -birdW/2, -birdH/2, birdW, birdH);
-  ctx.restore();
-
-  if (state === 'ready'){
-    overlay?.classList.add('show');
-    overlay?.classList.remove('hide');
-  }
-}
-
 
   function loop(t){
     const dt = Math.min(0.033, (t - lastTime) / 1000 || 0);
