@@ -84,7 +84,7 @@ function updateScoreBadge(val){
   segTile.onload = () => segReady.tile = true;
   segCap.onload  = () => segReady.cap  = true;
 
-
+//test
   function nextMedalJump() {
     // returns an integer in [13, 20]
     return 13 + Math.floor(Math.random() * 8);
