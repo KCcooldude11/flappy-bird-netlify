@@ -84,6 +84,7 @@
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   }
   resizeCanvas();
+ 
 
   const W = () => (canvas.clientWidth  || canvas.width  / DPR);
   const H = () => (canvas.clientHeight || canvas.height / DPR);
@@ -91,6 +92,7 @@
   const BASE_H = 720; let S = 1;
   function recomputeScale(){ S = H() / BASE_H; if (!Number.isFinite(S) || S <= 0) S = 1; }
   recomputeScale();
+ 
 
   const START_X_FRAC = 0.28;
   const BIRD_X   = () => Math.round(W() * START_X_FRAC);
@@ -112,11 +114,21 @@
 
   window.addEventListener('resize', () => {
     resizeCanvas(); recomputeScale();
+    WaterParticles.onResize(W(), H());
     bird.x = BIRD_X();
     bird.r = Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale());
     if (state !== 'playing') bird.y = Math.round(H()/2 - 80*S);
     invalidateBgCache();
   });
+  
+  function theme2Alpha() {
+  if (!transition) return (theme === 2) ? 1 : 0;
+  const a = Math.min(1, Math.max(0, (frameNow - transition.start) / THEME_FADE_MS));
+  if (transition.to === 2)   return a;
+  if (transition.from === 2) return 1 - a;
+  return 0;
+}
+
 
   // ===== Assets (Backgrounds per theme) =====
   const bg1 = new Image(); bg1.src = './assets/Untitled_Artwork.png';
@@ -412,6 +424,95 @@ function getBgForTheme(t) {
   const MERRIKH_INDEX = SKINS.findIndex(s => s.name === 'Merrikh');
   let skinLocked = false;
 
+  const MERRIKH_UNLOCK_COLUMN = 301;                 // the “spire 500” target
+  const LOCK_AFTER_MERRIKH    = true;                // optional: keep Merrikh once earned
+
+  let merrikhUnlockedThisRun = false;
+
+  // ===== Theme 2: relaxed water particles (from Sorodyn's CodePen) =====
+// source: "Relaxed Water Particles" by Sorodyn (CodePen qEdvzaE)
+const WaterParticles = (() => {
+  const state = { parts: [], target: 140, lastW: 0, lastH: 0 };
+  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+
+  class P {
+    constructor(w, h) { this.reset(w, h); this.y = Math.random() * h; }
+    reset(w, h) {
+      this.x = Math.random() * w;
+      this.y = h + Math.random() * 50;          // start just below
+      this.r = Math.random() * 3 + 1;           // 1..4 px
+      this.vy = Math.random() * 1 + 0.5;        // up speed
+      this.opacity = this.r / 4;                // small = more transparent
+      this.wobble = Math.random() * 0.02 + 0.01;
+      this.ang = Math.random() * Math.PI * 2;
+    }
+    step(w, h) {
+      this.y -= this.vy;
+      this.ang += this.wobble;
+      this.x += Math.sin(this.ang) * 0.5;
+      if (this.y < -this.r) this.reset(w, h);
+    }
+  }
+
+  function desiredCount(w, h) {
+    // scale particle count by area, but cap for perf
+    const k = (w * h) / 26000;                  // tune density here
+    return clamp(Math.round(k), 90, 220);
+  }
+
+  function ensureCount(w, h) {
+    state.target = desiredCount(w, h);
+    const arr = state.parts;
+    while (arr.length < state.target) arr.push(new P(w, h));
+    if (arr.length > state.target) arr.length = state.target;
+  }
+
+  return {
+    onResize(w, h) {
+      state.lastW = Math.max(1, Math.floor(w));
+      state.lastH = Math.max(1, Math.floor(h));
+      ensureCount(state.lastW, state.lastH);
+    },
+    update(dt) {
+      const arr = state.parts, w = state.lastW, h = state.lastH;
+      for (let i = 0; i < arr.length; i++) arr[i].step(w, h);
+    },
+    draw(alpha = 1) {
+      if (alpha <= 0) return;
+      const a = Math.max(0, Math.min(1, alpha));
+      if (!a || !state.parts.length) return;
+
+      ctx.save();
+      // isolate any shadows so they don't leak
+      ctx.globalAlpha = a;
+      ctx.shadowColor = 'rgba(0,191,255,0.7)';
+      ctx.shadowBlur = 10;
+
+      ctx.beginPath();
+      for (const p of state.parts) {
+        ctx.moveTo(p.x + p.r, p.y);
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      }
+      ctx.fillStyle = 'rgba(173,216,230,1)'; // fill alpha comes from p.opacity below
+      // Fill each circle with per-particle opacity (draw individually for correct opacity)
+      ctx.restore(); // restore before per-dot to avoid compounding shadow on huge paths
+
+      // draw individually to honor per-particle opacity + glow
+      ctx.save();
+      for (const p of state.parts) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(173,216,230,${p.opacity * a})`;
+        ctx.shadowColor = 'rgba(0,191,255,0.7)';
+        ctx.shadowBlur = 10;
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  };
+})();
+
+
   const nameInput = document.getElementById('username');
   function getSavedName() { return (localStorage.getItem('playerName') || '').trim(); }
   const skinScale = i => (SKINS[i] && typeof SKINS[i].scale === 'number') ? SKINS[i].scale : 1;
@@ -435,28 +536,29 @@ function getBgForTheme(t) {
   let currentIdleImg = SKINS[currentSkinIndex].idleImg;
   let currentFlapImg = SKINS[currentSkinIndex].flapImg;
 
+  function canUseSkin(i){
+    if (i === MERRIKH_INDEX && !merrikhUnlockedThisRun) return false;
+    return skinReady(i);
+  }
+
   function switchToSkin(i){
-    if (!skinReady(i)) return false;
+    if (!canUseSkin(i)) return false;   // <- central block
     currentSkinIndex = i;
     currentIdleImg = SKINS[i].idleImg;
     currentFlapImg = SKINS[i].flapImg;
     bird.r = Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale());
     return true;
   }
-  function nextSkin(){
-    const start = (currentSkinIndex + 1) % SKINS.length;
-    for (let k = 0; k < SKINS.length; k++){
-      const idx = (start + k) % SKINS.length;
-      if (switchToSkin(idx)) return true;
-    }
-    return false;
+
+  function advanceSkinOneStepBlockingMerrikh(){
+    const next = (currentSkinIndex + 1);          // NO modulo wrap
+    if (next >= SKINS.length) return false;       // at end? do nothing
+
+    if (!canUseSkin(next)) return false;          // blocks Merrikh if locked
+    return switchToSkin(next);
   }
-  function nextSkinRespectTheoLock(){
-    if (skinLocked) return false;
-    const changed = nextSkin();
-    if (changed && currentSkinIndex === MERRIKH_INDEX) skinLocked = true;
-    return changed;
-  }
+
+
 
   const isValidName = (s) => {
     if (typeof s !== 'string') return false;
@@ -516,7 +618,7 @@ function getBgForTheme(t) {
     if (scoreTextEl) scoreTextEl.textContent = '0';
     updateScoreBadge(0);
     medallions = []; columnsSpawned = 0; nextMedalColumn = 16;
-
+    merrikhUnlockedThisRun = false; 
     // theme reset
     theme = 1; transition = null;
     segTile = segTile1; segCap = segCap1; segReady = ready1;
@@ -524,13 +626,14 @@ function getBgForTheme(t) {
 
     // skins: always start as Apple again and unlock
     skinLocked = false;
-    if (APPLE_INDEX >= 0 && skinReady(APPLE_INDEX)) {
-      switchToSkin(APPLE_INDEX);
-    } else {
-      for (let i = 0; i < SKINS.length; i++) {
-        if (skinReady(i)) { switchToSkin(i); break; }
+      if (APPLE_INDEX >= 0 && skinReady(APPLE_INDEX)) {
+        switchToSkin(APPLE_INDEX);
+      } else {
+        for (let i = 0; i < SKINS.length; i++) {
+          if (i === MERRIKH_INDEX && !merrikhUnlockedThisRun) continue; // don't start as Merrikh pre-unlock
+          if (skinReady(i)) { switchToSkin(i); break; }
+        }
       }
-    }
   }
 
   let runStartTime = 0;
@@ -664,20 +767,38 @@ function getBgForTheme(t) {
     const p = { x, topH: topY, gapY: topY + PIPE_GAP(), scored:false };
     pipes.push(p);
     columnsSpawned++;
+    if (columnsSpawned === MERRIKH_UNLOCK_COLUMN && !merrikhUnlockedThisRun) {
+      const prevPipe = pipes[pipes.length - 2];
+      const thisPipe = pipes[pipes.length - 1];
+      const base     = prevPipe || thisPipe;
 
-    // Medallion spawn
-    const last = pipes[pipes.length - 2];
-    if (columnsSpawned === nextMedalColumn && last){
-      const mx = Math.round((last.x + x) / 2);
-      const gapTop = last.topH, gapBot = last.gapY;
+      const mx = prevPipe ? Math.round((prevPipe.x + thisPipe.x) / 2)
+                          : Math.round(thisPipe.x - PIPE_WIDTH() * 0.4);
+
+      const gapTop = base.topH, gapBot = base.gapY;
       const safeMargin = Math.round(0.2 * PIPE_GAP());
       const minY = gapTop + safeMargin, maxY = gapBot - safeMargin;
-      const centerY = (minY + maxY) / 2;
-      const jitter = (Math.random() * 0.4 - 0.2) * (maxY - minY);
-      const my = Math.round(centerY + jitter);
-      const size = Math.max(68, Math.round(28*S));
-      medallions.push({ x:mx, y:my, size, r:Math.round(size*0.42), taken:false });
-      nextMedalColumn += nextMedalJump();
+      const centerY = (minY + maxY)/2;
+      const jitter  = (Math.random() * 0.3 - 0.15) * (maxY - minY);
+      const my = Math.round(Math.max(minY, Math.min(maxY, centerY + jitter)));
+
+      const size = Math.max(72, Math.round(32 * S));
+      medallions.push({ x: mx, y: my, size, r: Math.round(size * 0.42), taken: false, type: 'merrikh' });
+    } else {
+      // ----- Regular medallion spawn (unchanged), use a DIFFERENT name than above -----
+      const prevPipe2 = pipes[pipes.length - 2];
+      if (columnsSpawned === nextMedalColumn && prevPipe2){
+        const mx = Math.round((prevPipe2.x + x) / 2);
+        const gapTop = prevPipe2.topH, gapBot = prevPipe2.gapY;
+        const safeMargin = Math.round(0.2 * PIPE_GAP());
+        const minY = gapTop + safeMargin, maxY = gapBot - safeMargin;
+        const centerY = (minY + maxY) / 2;
+        const jitter = (Math.random() * 0.4 - 0.2) * (maxY - minY);
+        const my = Math.round(centerY + jitter);
+        const size = Math.max(68, Math.round(28*S));
+        medallions.push({ x:mx, y:my, size, r:Math.round(size*0.42), taken:false });
+        nextMedalColumn += nextMedalJump();
+      }
     }
   }
 
@@ -761,10 +882,22 @@ function getBgForTheme(t) {
       for (let m of medallions){
         m.x -= PIPE_SPEED() * dt;
         const dx = bird.x - m.x, dy = bird.y - m.y, rr = bird.r + m.r;
-        if (!m.taken && (dx*dx + dy*dy) < rr*rr){ m.taken = true; nextSkinRespectTheoLock(); }
+        if (!m.taken && (dx*dx + dy*dy) < rr*rr) { 
+          m.taken = true;
+
+          if (m.type === 'merrikh') {
+            merrikhUnlockedThisRun = true;
+            switchToSkin(MERRIKH_INDEX);
+            if (LOCK_AFTER_MERRIKH) skinLocked = true; // keep them on Merrikh for the rest of the run, if you like
+          } else {
+            advanceSkinOneStepBlockingMerrikh(); // still blocks Merrikh until unlocked this run
+          }
+
+        }
       }
       medallions = medallions.filter(m => !m.taken && (m.x + m.size) > -40*S);
     }
+    if (theme2Alpha() > 0) WaterParticles.update(dt);
   }
 
   function drawBackground() {
@@ -796,7 +929,7 @@ function getBgForTheme(t) {
 
     // Background (cached)
     drawBackground();
-
+    WaterParticles.draw(theme2Alpha());
     // Spires
     for (let p of pipes){
       drawSpireSegmented(p.x, 0, PIPE_WIDTH(), p.topH, 'down');
