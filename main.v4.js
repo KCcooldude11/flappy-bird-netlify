@@ -91,9 +91,90 @@
   const BASE_H = 720; let S = 1;
   function recomputeScale(){ S = H() / BASE_H; if (!Number.isFinite(S) || S <= 0) S = 1; }
   recomputeScale();
-  
-  WaterParticles.onResize(W(), H());
 
+  const WaterParticles = (() => {
+    const state = { parts: [], target: 140, lastW: 0, lastH: 0 };
+    const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+
+    class P {
+      constructor(w, h) { this.reset(w, h); this.y = Math.random() * h; }
+      reset(w, h) {
+        this.x = Math.random() * w;
+        this.y = h + Math.random() * 50;          // start just below
+        this.r = Math.random() * 3 + 1;           // 1..4 px
+        this.vy = Math.random() * 1 + 0.5;        // up speed
+        this.opacity = this.r / 4;                // small = more transparent
+        this.wobble = Math.random() * 0.02 + 0.01;
+        this.ang = Math.random() * Math.PI * 2;
+      }
+      step(w, h) {
+        this.y -= this.vy;
+        this.ang += this.wobble;
+        this.x += Math.sin(this.ang) * 0.5;
+        if (this.y < -this.r) this.reset(w, h);
+      }
+    }
+
+    function desiredCount(w, h) {
+      // scale particle count by area, but cap for perf
+      const k = (w * h) / 26000;                  // tune density here
+      return clamp(Math.round(k), 90, 220);
+    }
+
+    function ensureCount(w, h) {
+      state.target = desiredCount(w, h);
+      const arr = state.parts;
+      while (arr.length < state.target) arr.push(new P(w, h));
+      if (arr.length > state.target) arr.length = state.target;
+    }
+
+    return {
+      onResize(w, h) {
+        state.lastW = Math.max(1, Math.floor(w));
+        state.lastH = Math.max(1, Math.floor(h));
+        ensureCount(state.lastW, state.lastH);
+      },
+      update(dt) {
+        const arr = state.parts, w = state.lastW, h = state.lastH;
+        for (let i = 0; i < arr.length; i++) arr[i].step(w, h);
+      },
+      draw(alpha = 1) {
+        if (alpha <= 0) return;
+        const a = Math.max(0, Math.min(1, alpha));
+        if (!a || !state.parts.length) return;
+
+        ctx.save();
+        // isolate any shadows so they don't leak
+        ctx.globalAlpha = a;
+        ctx.shadowColor = 'rgba(0,191,255,0.7)';
+        ctx.shadowBlur = 10;
+
+        ctx.beginPath();
+        for (const p of state.parts) {
+          ctx.moveTo(p.x + p.r, p.y);
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        }
+        ctx.fillStyle = 'rgba(173,216,230,1)'; // fill alpha comes from p.opacity below
+        // Fill each circle with per-particle opacity (draw individually for correct opacity)
+        ctx.restore(); // restore before per-dot to avoid compounding shadow on huge paths
+
+        // draw individually to honor per-particle opacity + glow
+        ctx.save();
+        for (const p of state.parts) {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(173,216,230,${p.opacity * a})`;
+          ctx.shadowColor = 'rgba(0,191,255,0.7)';
+          ctx.shadowBlur = 10;
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    };
+  })();
+
+  WaterParticles.onResize(W(), H());
+ 
 
   const START_X_FRAC = 0.28;
   const BIRD_X   = () => Math.round(W() * START_X_FRAC);
@@ -432,86 +513,7 @@ function getBgForTheme(t) {
 
   // ===== Theme 2: relaxed water particles (from Sorodyn's CodePen) =====
 // source: "Relaxed Water Particles" by Sorodyn (CodePen qEdvzaE)
-const WaterParticles = (() => {
-  const state = { parts: [], target: 140, lastW: 0, lastH: 0 };
-  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 
-  class P {
-    constructor(w, h) { this.reset(w, h); this.y = Math.random() * h; }
-    reset(w, h) {
-      this.x = Math.random() * w;
-      this.y = h + Math.random() * 50;          // start just below
-      this.r = Math.random() * 3 + 1;           // 1..4 px
-      this.vy = Math.random() * 1 + 0.5;        // up speed
-      this.opacity = this.r / 4;                // small = more transparent
-      this.wobble = Math.random() * 0.02 + 0.01;
-      this.ang = Math.random() * Math.PI * 2;
-    }
-    step(w, h) {
-      this.y -= this.vy;
-      this.ang += this.wobble;
-      this.x += Math.sin(this.ang) * 0.5;
-      if (this.y < -this.r) this.reset(w, h);
-    }
-  }
-
-  function desiredCount(w, h) {
-    // scale particle count by area, but cap for perf
-    const k = (w * h) / 26000;                  // tune density here
-    return clamp(Math.round(k), 90, 220);
-  }
-
-  function ensureCount(w, h) {
-    state.target = desiredCount(w, h);
-    const arr = state.parts;
-    while (arr.length < state.target) arr.push(new P(w, h));
-    if (arr.length > state.target) arr.length = state.target;
-  }
-
-  return {
-    onResize(w, h) {
-      state.lastW = Math.max(1, Math.floor(w));
-      state.lastH = Math.max(1, Math.floor(h));
-      ensureCount(state.lastW, state.lastH);
-    },
-    update(dt) {
-      const arr = state.parts, w = state.lastW, h = state.lastH;
-      for (let i = 0; i < arr.length; i++) arr[i].step(w, h);
-    },
-    draw(alpha = 1) {
-      if (alpha <= 0) return;
-      const a = Math.max(0, Math.min(1, alpha));
-      if (!a || !state.parts.length) return;
-
-      ctx.save();
-      // isolate any shadows so they don't leak
-      ctx.globalAlpha = a;
-      ctx.shadowColor = 'rgba(0,191,255,0.7)';
-      ctx.shadowBlur = 10;
-
-      ctx.beginPath();
-      for (const p of state.parts) {
-        ctx.moveTo(p.x + p.r, p.y);
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      }
-      ctx.fillStyle = 'rgba(173,216,230,1)'; // fill alpha comes from p.opacity below
-      // Fill each circle with per-particle opacity (draw individually for correct opacity)
-      ctx.restore(); // restore before per-dot to avoid compounding shadow on huge paths
-
-      // draw individually to honor per-particle opacity + glow
-      ctx.save();
-      for (const p of state.parts) {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(173,216,230,${p.opacity * a})`;
-        ctx.shadowColor = 'rgba(0,191,255,0.7)';
-        ctx.shadowBlur = 10;
-        ctx.fill();
-      }
-      ctx.restore();
-    }
-  };
-})();
 
 
   const nameInput = document.getElementById('username');
@@ -597,7 +599,7 @@ const WaterParticles = (() => {
 
   // Theme transition state
   let theme = 1;
-  const THEME_THRESHOLDS = [3, 200]; // 1->2 at 100, 2->3 at 200
+  const THEME_THRESHOLDS = [10, 200]; // 1->2 at 100, 2->3 at 200
   const THEME_FADE_MS = 800;
   let transition = null; // {from,to,start}
 
@@ -902,7 +904,7 @@ const WaterParticles = (() => {
   }
   window.addEventListener('orientationchange', () => {
   resizeCanvas(); recomputeScale();
-
+  WaterParticles.onResize(W(), H());
   invalidateBgCache();
 })
 
