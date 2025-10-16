@@ -84,8 +84,6 @@
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   }
   resizeCanvas();
-  WaterParticles.onResize(W(), H())
- 
 
   const W = () => (canvas.clientWidth  || canvas.width  / DPR);
   const H = () => (canvas.clientHeight || canvas.height / DPR);
@@ -93,7 +91,9 @@
   const BASE_H = 720; let S = 1;
   function recomputeScale(){ S = H() / BASE_H; if (!Number.isFinite(S) || S <= 0) S = 1; }
   recomputeScale();
- 
+  
+  WaterParticles.onResize(W(), H());
+
 
   const START_X_FRAC = 0.28;
   const BIRD_X   = () => Math.round(W() * START_X_FRAC);
@@ -902,7 +902,7 @@ const WaterParticles = (() => {
   }
   window.addEventListener('orientationchange', () => {
   resizeCanvas(); recomputeScale();
-  WaterParticles.onResize(W(), H());
+
   invalidateBgCache();
 })
 
@@ -935,7 +935,12 @@ const WaterParticles = (() => {
 
     // Background (cached)
     drawBackground();
-    WaterParticles.draw(theme2Alpha());
+    if (theme2Alpha() > 0) {
+      ctx.save();
+      ctx.filter = 'none';
+      WaterParticles.draw(theme2Alpha());
+      ctx.restore();
+    }
     // Spires
     for (let p of pipes){
       drawSpireSegmented(p.x, 0, PIPE_WIDTH(), p.topH, 'down');
