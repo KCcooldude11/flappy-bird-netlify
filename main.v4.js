@@ -84,6 +84,7 @@
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   }
   resizeCanvas();
+  WaterParticles.onResize(W(), H())
  
 
   const W = () => (canvas.clientWidth  || canvas.width  / DPR);
@@ -596,7 +597,7 @@ const WaterParticles = (() => {
 
   // Theme transition state
   let theme = 1;
-  const THEME_THRESHOLDS = [100, 200]; // 1->2 at 100, 2->3 at 200
+  const THEME_THRESHOLDS = [3, 200]; // 1->2 at 100, 2->3 at 200
   const THEME_FADE_MS = 800;
   let transition = null; // {from,to,start}
 
@@ -899,6 +900,11 @@ const WaterParticles = (() => {
     }
     if (theme2Alpha() > 0) WaterParticles.update(dt);
   }
+  window.addEventListener('orientationchange', () => {
+  resizeCanvas(); recomputeScale();
+  WaterParticles.onResize(W(), H());
+  invalidateBgCache();
+})
 
   function drawBackground() {
   const vw = W(), vh = H();
