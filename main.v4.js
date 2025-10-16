@@ -596,7 +596,7 @@ const WaterParticles = (() => {
 
   // Theme transition state
   let theme = 1;
-  const THEME_THRESHOLDS = [10, 200]; // 1->2 at 100, 2->3 at 200
+  const THEME_THRESHOLDS = [100, 200]; // 1->2 at 100, 2->3 at 200
   const THEME_FADE_MS = 800;
   let transition = null; // {from,to,start}
 
