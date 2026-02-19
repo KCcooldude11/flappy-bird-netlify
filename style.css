@@ -433,52 +433,38 @@ kbd {
 }
 
 #homeTitle .titleText{
-  display: inline-block;
+  display:inline-block;
   font-size: clamp(28px, 5.5vw, 56px);
   letter-spacing: 0.09em;
-  position: relative;
 
-  /* warmer “Rankless-like” gold */
+  /* BRIGHT gold fill */
   color: transparent;
   background-image: linear-gradient(
     180deg,
-    #fff1a8 0%,
-    #ffd36b 18%,
-    #f0b43a 38%,
-    #c98512 58%,
-    #ffcf63 78%,
-    #fff1a8 100%
+    #fff7c9 0%,
+    #ffe28a 18%,
+    #f7c84d 38%,
+    #d89a22 58%,
+    #ffe08a 78%,
+    #fff7c9 100%
   );
-  -webkit-background-clip: text;
-  background-clip: text;
+  -webkit-background-clip:text;
+  background-clip:text;
   -webkit-text-fill-color: transparent;
 
-  /* darker, thicker edge */
-  -webkit-text-stroke: 1.35px rgba(45, 24, 6, 0.78);
+  /* thinner, less “muddy” outline */
+  -webkit-text-stroke: 1px rgba(40, 20, 5, 0.55);
 
-  /* 3D “extrusion” + deep drop shadow */
+  /* keep 3D but don’t drown the gold */
   text-shadow:
-    /* tight edge deepen */
-    0 1px 0 rgba(35,18,6,.55),
-
-    /* stepped extrusion (down-right) */
-    1px 1px 0 rgba(55, 30, 10, .90),
-    2px 2px 0 rgba(55, 30, 10, .86),
-    3px 3px 0 rgba(55, 30, 10, .82),
-    4px 4px 0 rgba(55, 30, 10, .78),
-    5px 5px 0 rgba(55, 30, 10, .74),
-    6px 6px 0 rgba(55, 30, 10, .70),
-    7px 7px 0 rgba(55, 30, 10, .66),
-    8px 8px 0 rgba(55, 30, 10, .62),
-
-    /* soft depth behind it */
-    10px 12px 10px rgba(0,0,0,.35),
-    16px 22px 18px rgba(0,0,0,.25);
-
-  /* helps the stroke look cleaner */
-  paint-order: stroke fill;
-  -webkit-font-smoothing: antialiased;
+    1px 1px 0 rgba(45, 24, 8, .55),
+    2px 2px 0 rgba(45, 24, 8, .50),
+    3px 3px 0 rgba(45, 24, 8, .45),
+    4px 4px 0 rgba(45, 24, 8, .40),
+    5px 5px 0 rgba(45, 24, 8, .35),
+    8px 10px 12px rgba(0,0,0,.22);
 }
+
 
 
 .your-rank{
