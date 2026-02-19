@@ -402,6 +402,7 @@ kbd {
 }
 
 /* Big gold title on the home screen only */
+/* Big title card on the home screen only */
 #homeTitle{
   position: fixed;
   top: max(16px, env(safe-area-inset-top));
@@ -417,15 +418,19 @@ kbd {
   padding: 14px 22px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.18);
 
-  /* title text */
-  font-size: clamp(28px, 5.5vw, 56px);
-  letter-spacing: 0.08em;
+  /* layout */
   white-space: nowrap;
   pointer-events: none;
+}
+
+#homeTitle .titleText{
+  display: inline-block;
+  font-size: clamp(28px, 5.5vw, 56px);
+  letter-spacing: 0.08em;
 
   /* metallic gold text */
   color: transparent;
-  background: linear-gradient(
+  background-image: linear-gradient(
     180deg,
     #fff3b0 0%,
     #f6d365 18%,
@@ -436,6 +441,7 @@ kbd {
   );
   -webkit-background-clip: text;
   background-clip: text;
+  -webkit-text-fill-color: transparent;
 
   /* depth */
   text-shadow:
@@ -443,6 +449,7 @@ kbd {
     0 2px 0 rgba(0,0,0,0.15),
     0 10px 22px rgba(0,0,0,0.18);
 }
+
 
 /* Default: hide the title except on the home screen */
 body:not([data-state="ready"]) #homeTitle{
