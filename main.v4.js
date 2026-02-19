@@ -422,6 +422,27 @@ function getBgForTheme(t) {
     }
   }
 
+  
+function ensureDeviceId(){
+    let id = localStorage.getItem('deviceId');
+    if (!id){ id = crypto.randomUUID(); localStorage.setItem('deviceId', id); }
+    return id;
+  }
+  async function registerIdentityIfNeeded(){
+    const deviceId = ensureDeviceId();
+    let name = getSavedName();
+    if (!isValidName(name)) return { deviceId, name: '' };
+    try {
+      await fetch('/.netlify/functions/register-identity', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ deviceId, name })
+      });
+    } catch {}
+    return { deviceId, name };
+  }
+  registerIdentityIfNeeded();
+  const DEVICE_ID = ensureDeviceId();
+
   // ===== Leaderboard / identity =====
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -541,25 +562,6 @@ function getBgForTheme(t) {
   // ===== Theme 2: relaxed water particles (from Sorodyn's CodePen) =====
 // source: "Relaxed Water Particles" by Sorodyn (CodePen qEdvzaE)
 
-function ensureDeviceId(){
-    let id = localStorage.getItem('deviceId');
-    if (!id){ id = crypto.randomUUID(); localStorage.setItem('deviceId', id); }
-    return id;
-  }
-  async function registerIdentityIfNeeded(){
-    const deviceId = ensureDeviceId();
-    let name = getSavedName();
-    if (!isValidName(name)) return { deviceId, name: '' };
-    try {
-      await fetch('/.netlify/functions/register-identity', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ deviceId, name })
-      });
-    } catch {}
-    return { deviceId, name };
-  }
-  registerIdentityIfNeeded();
-  const DEVICE_ID = ensureDeviceId();
 
   const nameInput = document.getElementById('username');
   function getSavedName() { return (localStorage.getItem('playerName') || '').trim(); }
