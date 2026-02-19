@@ -443,12 +443,14 @@ kbd {
   background-clip: text;
   -webkit-text-fill-color: transparent;
 
-  /* depth */
+  /* stronger "Rankless" style shadow */
   text-shadow:
-    0 1px 0 rgba(255,255,255,0.35),
-    0 2px 0 rgba(0,0,0,0.15),
-    0 10px 22px rgba(0,0,0,0.18);
+    0 2px 0 rgba(0,0,0,0.45),     /* tight base */
+    0 6px 0 rgba(0,0,0,0.30),     /* layered depth */
+    0 14px 10px rgba(0,0,0,0.35), /* big soft shadow */
+    0 22px 22px rgba(0,0,0,0.30); /* extra falloff */
 }
+
 
 
 /* Default: hide the title except on the home screen */
