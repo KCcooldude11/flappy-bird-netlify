@@ -411,7 +411,7 @@ kbd {
 }
 
 /* Big gold title on the home screen only */
-/* Big title card on the home screen only */
+/* Title card */
 #homeTitle{
   position: fixed;
   top: max(16px, env(safe-area-inset-top));
@@ -420,49 +420,50 @@ kbd {
   margin: 0;
   z-index: 50;
 
-  /* card look */
   background: rgba(255,255,255,0.92);
   border: 1px solid rgba(0,0,0,0.08);
   border-radius: 14px;
   padding: 14px 22px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.18);
 
-  /* layout */
   white-space: nowrap;
   pointer-events: none;
 }
 
+/* Start-over gold text */
 #homeTitle .titleText{
-  display:inline-block;
+  display: inline-block;
   font-size: clamp(28px, 5.5vw, 56px);
-  letter-spacing: 0.09em;
+  letter-spacing: 0.08em;
 
-  /* BRIGHT gold fill */
-  color: transparent;
+  /* Fallback: still gold even if gradient clip fails */
+  color: #d4af37;
+
+  /* Metallic gold gradient */
   background-image: linear-gradient(
     180deg,
-    #fff7c9 0%,
-    #ffe28a 18%,
-    #f7c84d 38%,
-    #d89a22 58%,
-    #ffe08a 78%,
-    #fff7c9 100%
+    #fff6cc 0%,
+    #ffe08a 16%,
+    #f6c24b 36%,
+    #d4af37 52%,
+    #b8821a 66%,
+    #ffd97a 82%,
+    #fff6cc 100%
   );
-  -webkit-background-clip:text;
-  background-clip:text;
+  -webkit-background-clip: text;
+  background-clip: text;
+
+  /* The key: only WebKit uses this, but it makes the gradient actually show */
   -webkit-text-fill-color: transparent;
 
-  /* thinner, less “muddy” outline */
-  -webkit-text-stroke: 1px rgba(40, 20, 5, 0.55);
+  /* Thin warm outline, not muddy */
+  -webkit-text-stroke: 0.8px rgba(70, 40, 10, 0.45);
 
-  /* keep 3D but don’t drown the gold */
+  /* Depth without turning brown */
   text-shadow:
-    1px 1px 0 rgba(45, 24, 8, .55),
-    2px 2px 0 rgba(45, 24, 8, .50),
-    3px 3px 0 rgba(45, 24, 8, .45),
-    4px 4px 0 rgba(45, 24, 8, .40),
-    5px 5px 0 rgba(45, 24, 8, .35),
-    8px 10px 12px rgba(0,0,0,.22);
+    0 1px 0 rgba(255,255,255,0.35),      /* tiny highlight */
+    0 3px 0 rgba(90, 55, 15, 0.35),      /* subtle “lift” */
+    0 10px 14px rgba(0,0,0,0.22);        /* soft drop */
 }
 
 
