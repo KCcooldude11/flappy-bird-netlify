@@ -6,10 +6,10 @@ exports.handler = async (event) => {
     const limit = Math.max(1, Math.min(100, Number(url.searchParams.get('limit') || 10)));
 
     const { data, error } = await supabase
-      .from('scores')
-      .select('name, score, created_at')
-      .order('score', { ascending: false })
-      .order('created_at', { ascending: true })
+      .from('player_best_scores')
+      .select('name, best_score, first_achieved_at')
+      .order('best_score', { ascending: false })
+      .order('first_achieved_at', { ascending: true })
       .limit(limit);
 
     if (error) {
@@ -19,7 +19,9 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scores: data || [] }),
+      body: JSON.stringify({
+        scores: (data || []).map(r => ({ name: r.name, score: r.best_score, created_at: r.first_achieved_at }))
+      })
     };
   } catch (e) {
     return { statusCode: 500, body: JSON.stringify({ error: e.message }) };

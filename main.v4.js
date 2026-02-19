@@ -455,8 +455,35 @@ function getBgForTheme(t) {
       const { scores } = await res.json();
       renderLeaderboard(scores || []);
     } catch(e){ console.warn('leaderboard fetch error', e); }
+
+    // also refresh "your ranking"
+    await loadMyRank();
   }
+
   document.addEventListener('DOMContentLoaded', loadLeaderboard);
+
+  function renderYourRank(info){
+    const el = document.getElementById('your-rank');
+    if (!el) return;
+
+    if (!info || !info.hasScore) {
+      el.textContent = 'Play a run to earn a ranking.';
+      return;
+    }
+
+    el.textContent = `Your ranking: #${info.rank} of ${info.totalPlayers} (Best ${info.bestScore})`;
+  }
+
+  async function loadMyRank(){
+    try{
+      const res = await fetch(`/.netlify/functions/get-my-rank?deviceId=${encodeURIComponent(DEVICE_ID)}`);
+      const data = await res.json();
+      renderYourRank(data);
+    } catch(e){
+      console.warn('rank fetch error', e);
+    }
+  }
+
 
   function ensureDeviceId(){
     let id = localStorage.getItem('deviceId');
