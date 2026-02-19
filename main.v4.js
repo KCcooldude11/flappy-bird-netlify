@@ -584,6 +584,13 @@ function getBgForTheme(t) {
 
   // ===== Game state =====
   let state = 'ready'; // ready | playing | gameover
+  document.body.dataset.state = state;
+
+  function setState(next){
+    state = next;
+    document.body.dataset.state = state;
+  }
+
   let bird  = {
     x:BIRD_X(), y:Math.round(H()/2 - 80*S), vy:0, rot:0, flapTimer:0,
     r: Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale())
@@ -646,7 +653,7 @@ function getBgForTheme(t) {
     const name = getSavedName();
     if (!isValidName(name)) { overlay?.classList.add('show'); return; }
     resetGame(); markRunStart();
-    state = 'playing';
+    setState('playing');
     overlay?.classList.add('hide'); overlay?.classList.remove('show');
     gameoverEl?.classList.add('hide'); gameoverEl?.classList.remove('show');
     if (goSkin) { goSkin.src = ''; goSkin.classList.add('hide'); }
@@ -655,7 +662,7 @@ function getBgForTheme(t) {
   }
 
   async function gameOver(){
-    state = 'gameover';
+    setState('gameover');
     if (score > best){ best = score; localStorage.setItem('flappy-best', String(best)); bestEl && (bestEl.textContent = 'Best: ' + best); }
     const playMs = Math.round(frameNow - runStartTime);
     const result = await postScore(DEVICE_ID, score, playMs);

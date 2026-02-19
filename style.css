@@ -400,3 +400,33 @@ kbd {
   margin: 6px auto 0;
   image-rendering: auto;       /* or 'pixelated' if you like the chunky look */
 }
+
+/* Big gold title on the home screen only */
+#homeTitle{
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  z-index: 50;
+
+  font-size: clamp(32px, 6vw, 64px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+
+  color: #d4af37; /* gold */
+  text-shadow: 0 2px 0 rgba(0,0,0,0.25), 0 10px 25px rgba(0,0,0,0.20);
+  pointer-events: none;
+}
+
+/* Default: hide the title except on the home screen */
+body:not([data-state="ready"]) #homeTitle{
+  display: none;
+}
+
+/* Home screen: hide HUD elements */
+body[data-state="ready"] #btn-restart,
+body[data-state="ready"] #score,
+body[data-state="ready"] #best{
+  display: none !important;
+}
