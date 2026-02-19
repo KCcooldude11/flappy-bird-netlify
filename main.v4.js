@@ -490,6 +490,7 @@ function getBgForTheme(t) {
     { name:'Roni',   idle:'./assets/Roni_Fly.png',   flap:'./assets/Roni_Regular.png' },
     { name:'Knogle', idle:'./assets/Knogle_Fly.png', flap:'./assets/Knogle_Regular.png', scale: 1.08 },
     { name:'Orchard',idle:'./assets/Orchard_Fly.png',flap:'./assets/Orchard_Regular.png',scale: 1.08 },
+    { name:'Ephedra',idle:'./assets/Ephedra_Fly.png',flap:'./assets/Ephedra_Regular.png',scale: 1.08 },
     { name:'Merrikh',idle:'./assets/Merrikh_Fly.png',flap:'./assets/Merrikh_Regular.png',scale: 1.08 },
 
   ];
