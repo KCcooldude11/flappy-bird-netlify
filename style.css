@@ -443,13 +443,16 @@ kbd {
   background-clip: text;
   -webkit-text-fill-color: transparent;
 
-  /* stronger "Rankless" style shadow */
-  text-shadow:
-    0 2px 0 rgba(0,0,0,0.45),     /* tight base */
-    0 6px 0 rgba(0,0,0,0.30),     /* layered depth */
-    0 14px 10px rgba(0,0,0,0.35), /* big soft shadow */
-    0 22px 22px rgba(0,0,0,0.30); /* extra falloff */
+  /* crisp edge like a logo */
+  -webkit-text-stroke: 0.9px rgba(60, 35, 5, 0.45);
+
+  /* cleaner, “Rankless-like” drop shadow */
+  filter:
+    drop-shadow(0 3px 0 rgba(0,0,0,0.45))
+    drop-shadow(0 10px 10px rgba(0,0,0,0.30))
+    drop-shadow(0 20px 18px rgba(0,0,0,0.22));
 }
+
 
 
 
