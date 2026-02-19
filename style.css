@@ -421,11 +421,28 @@ kbd {
   font-size: clamp(28px, 5.5vw, 56px);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #d4af37; /* gold */
-  text-shadow: 0 2px 0 rgba(0,0,0,0.20);
-
-  pointer-events: none;
   white-space: nowrap;
+  pointer-events: none;
+
+  /* metallic gold text */
+  color: transparent;
+  background: linear-gradient(
+    180deg,
+    #fff3b0 0%,
+    #f6d365 18%,
+    #d4af37 40%,
+    #b8860b 60%,
+    #f6d365 78%,
+    #fff3b0 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+
+  /* depth */
+  text-shadow:
+    0 1px 0 rgba(255,255,255,0.35),
+    0 2px 0 rgba(0,0,0,0.15),
+    0 10px 22px rgba(0,0,0,0.18);
 }
 
 /* Default: hide the title except on the home screen */
