@@ -434,36 +434,31 @@ kbd {
 #homeTitle .titleText{
   display: inline-block;
   font-size: clamp(28px, 5.5vw, 56px);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
 
-  /* Fallback: still gold even if gradient clip fails */
-  color: #d4af37;
+  /* Fallback if gradient clip fails */
+  color: #F5C349;
 
-  /* Metallic gold gradient */
+  /* Warm gold like your sample */
   background-image: linear-gradient(
     180deg,
-    #fff6cc 0%,
-    #ffe08a 16%,
-    #f6c24b 36%,
-    #d4af37 52%,
-    #b8821a 66%,
-    #ffd97a 82%,
-    #fff6cc 100%
+    #FFE6A3 0%,
+    #F9CB4C 22%,
+    #F5C349 45%,
+    #D89A22 70%,
+    #FFE6A3 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
-
-  /* The key: only WebKit uses this, but it makes the gradient actually show */
   -webkit-text-fill-color: transparent;
 
-  /* Thin warm outline, not muddy */
-  -webkit-text-stroke: 0.8px rgba(70, 40, 10, 0.45);
+  /* Clean edge (avoid muddy outline) */
+  -webkit-text-stroke: 1px rgba(70, 35, 10, 0.55);
 
-  /* Depth without turning brown */
+  /* Light depth without killing the gold */
   text-shadow:
-    0 1px 0 rgba(255,255,255,0.35),      /* tiny highlight */
-    0 3px 0 rgba(90, 55, 15, 0.35),      /* subtle “lift” */
-    0 10px 14px rgba(0,0,0,0.22);        /* soft drop */
+    1px 1px 0 rgba(70, 35, 10, 0.35),
+    0 6px 10px rgba(0,0,0,0.20);
 }
 
 
