@@ -410,13 +410,22 @@ kbd {
   margin: 0;
   z-index: 50;
 
-  font-size: clamp(32px, 6vw, 64px);
+  /* card look */
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  padding: 14px 22px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+
+  /* title text */
+  font-size: clamp(28px, 5.5vw, 56px);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-
   color: #d4af37; /* gold */
-  text-shadow: 0 2px 0 rgba(0,0,0,0.25), 0 10px 25px rgba(0,0,0,0.20);
+  text-shadow: 0 2px 0 rgba(0,0,0,0.20);
+
   pointer-events: none;
+  white-space: nowrap;
 }
 
 /* Default: hide the title except on the home screen */
