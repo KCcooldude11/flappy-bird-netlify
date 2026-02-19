@@ -450,15 +450,33 @@ function getBgForTheme(t) {
     } catch(e){ return { error: e.message }; }
   }
   async function loadLeaderboard(){
+    let list = [];
     try {
       const res = await fetch('/.netlify/functions/get-leaderboard?limit=10');
       const { scores } = await res.json();
-      renderLeaderboard(scores || []);
-    } catch(e){ console.warn('leaderboard fetch error', e); }
+      list = scores || [];
+      renderLeaderboard(list);
+    } catch(e){
+      console.warn('leaderboard fetch error', e);
+    }
 
-    // also refresh "your ranking"
+    // show "your ranking" only if you're NOT already on the visible leaderboard
+    const yourRankEl = document.getElementById('your-rank');
+    const onBoard = Array.isArray(list) && list.some(r => r.device_id === DEVICE_ID);
+
+    if (yourRankEl) {
+      if (onBoard) {
+        yourRankEl.textContent = ''; // or "You're on the board!"
+        yourRankEl.classList.add('hide');
+        return;
+      } else {
+        yourRankEl.classList.remove('hide');
+      }
+    }
+
     await loadMyRank();
   }
+
 
   document.addEventListener('DOMContentLoaded', loadLeaderboard);
 

@@ -463,6 +463,7 @@ kbd {
 }
 
 
+#your-rank.hide { display: none !important; }
 
 
 /* Default: hide the title except on the home screen */
