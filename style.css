@@ -196,7 +196,8 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 }
 #gameover > * {
   pointer-events: auto;
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Shared panel content look */
@@ -232,8 +233,10 @@ kbd {
 .leaderboard {
   width: min(94vw, 380px);
   max-width: 100%;
-  max-height: 55vh;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  max-height: 55vh;     /* keep your existing cap */
+  overflow: hidden;
   background: rgba(255,255,255,.92);
   backdrop-filter: blur(8px);
   border-radius: 12px;
@@ -289,6 +292,12 @@ kbd {
   left: calc(-1 * var(--rw));
   border-left:  var(--rw) solid transparent;
   border-right: var(--rw) solid transparent;
+}
+
+#leaderboard-rows{
+  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .leaderboard .rank .rank-num{
@@ -473,6 +482,7 @@ kbd {
 
 
 .your-rank{
+  flex: 0 0 auto;
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid rgba(0,0,0,0.10);
@@ -480,10 +490,6 @@ kbd {
   opacity: 0.9;
   text-align: center;
 }
-
-
-#your-rank.hide { display: none !important; }
-
 
 /* Default: hide the title except on the home screen */
 body:not([data-state="ready"]) #homeTitle{
