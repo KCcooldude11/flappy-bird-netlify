@@ -426,32 +426,51 @@ kbd {
 #homeTitle .titleText{
   display: inline-block;
   font-size: clamp(28px, 5.5vw, 56px);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
+  position: relative;
 
-  /* metallic gold text */
+  /* warmer “Rankless-like” gold */
   color: transparent;
   background-image: linear-gradient(
     180deg,
-    #fff3b0 0%,
-    #f6d365 18%,
-    #d4af37 40%,
-    #b8860b 60%,
-    #f6d365 78%,
-    #fff3b0 100%
+    #fff1a8 0%,
+    #ffd36b 18%,
+    #f0b43a 38%,
+    #c98512 58%,
+    #ffcf63 78%,
+    #fff1a8 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 
-  /* crisp edge like a logo */
-  -webkit-text-stroke: 0.9px rgba(60, 35, 5, 0.45);
+  /* darker, thicker edge */
+  -webkit-text-stroke: 1.35px rgba(45, 24, 6, 0.78);
 
-  /* cleaner, “Rankless-like” drop shadow */
-  filter:
-    drop-shadow(0 3px 0 rgba(0,0,0,0.45))
-    drop-shadow(0 10px 10px rgba(0,0,0,0.30))
-    drop-shadow(0 20px 18px rgba(0,0,0,0.22));
+  /* 3D “extrusion” + deep drop shadow */
+  text-shadow:
+    /* tight edge deepen */
+    0 1px 0 rgba(35,18,6,.55),
+
+    /* stepped extrusion (down-right) */
+    1px 1px 0 rgba(55, 30, 10, .90),
+    2px 2px 0 rgba(55, 30, 10, .86),
+    3px 3px 0 rgba(55, 30, 10, .82),
+    4px 4px 0 rgba(55, 30, 10, .78),
+    5px 5px 0 rgba(55, 30, 10, .74),
+    6px 6px 0 rgba(55, 30, 10, .70),
+    7px 7px 0 rgba(55, 30, 10, .66),
+    8px 8px 0 rgba(55, 30, 10, .62),
+
+    /* soft depth behind it */
+    10px 12px 10px rgba(0,0,0,.35),
+    16px 22px 18px rgba(0,0,0,.25);
+
+  /* helps the stroke look cleaner */
+  paint-order: stroke fill;
+  -webkit-font-smoothing: antialiased;
 }
+
 
 .your-rank{
   margin-top: 10px;
