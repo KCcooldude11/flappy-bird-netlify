@@ -421,11 +421,11 @@ kbd {
   z-index: 50;
 
   /* keep your container styling (optional) */
-  background: rgba(255,255,255,0.92);
+  /* background: rgba(255,255,255,0.92);
   border: 1px solid rgba(0,0,0,0.08);
   border-radius: 14px;
   padding: 14px 22px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.18); */
 
   white-space: nowrap;
   pointer-events: none;
