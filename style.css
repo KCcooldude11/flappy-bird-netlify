@@ -545,6 +545,32 @@ body::before{
   opacity: 0.9;
   text-align: center;
 }
+.your-rank .yr-row{
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.03);
+}
+
+.your-rank .yr-label{
+  font-size: 15px;
+  opacity: 0.95;
+}
+
+.your-rank .yr-score{
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.95;
+}
+
+/* Make the diamond a little bigger than the leaderboard rows */
+.your-rank .yr-rank{
+  --rw: 10px;
+  --rh: 14px;
+}
 
 /* Default: hide the title except on the home screen */
 body:not([data-state="ready"]) #homeTitle{
