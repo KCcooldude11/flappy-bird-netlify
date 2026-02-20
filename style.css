@@ -548,8 +548,8 @@ body:not([data-state="ready"]) #homeTitle .titleText::after{
   background-position: 0 0, calc(var(--tile) / 2) calc(var(--tile) / 2);
 
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cdefs%3E%3Cmask id='cut'%3E%3Crect width='84' height='84' fill='white'/%3E%3Crect x='30' y='40' width='24' height='4' fill='black'/%3E%3C/mask%3E%3C/defs%3E%3Cpath d='M42 12 L58 42 L42 72 L26 42 Z' fill='rgba(235,235,235,0.16)' mask='url(%23cut)'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cdefs%3E%3Cmask id='cut'%3E%3Crect width='84' height='84' fill='white'/%3E%3Crect x='30' y='40' width='24' height='4' fill='black'/%3E%3C/mask%3E%3C/defs%3E%3Cpath d='M42 12 L58 42 L42 72 L26 42 Z' fill='rgba(235,235,235,0.16)' mask='url(%23cut)'/%3E%3C/svg%3E");
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cpath d='M42 12 L58 42 L42 72 L26 42 Z' fill='rgba(235,235,235,0.16)'/%3E%3Crect x='30' y='40' width='24' height='4' rx='1.5' fill='rgba(110,29,36,0.35)'/%3E%3C/svg%3E"),
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cpath d='M42 12 L58 42 L42 72 L26 42 Z' fill='rgba(235,235,235,0.16)'/%3E%3Crect x='30' y='40' width='24' height='4' rx='1.5' fill='rgba(110,29,36,0.35)'/%3E%3C/svg%3E");
 }
 
 .your-rank{
