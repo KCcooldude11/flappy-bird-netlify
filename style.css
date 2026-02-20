@@ -489,12 +489,16 @@ kbd {
     drop-shadow(0 0 18px rgba(255,230,120,0.18));
 
   pointer-events: none;
-  animation: homeTitleBeam 10s linear infinite;
+  animation: homeTitleBeam 7s linear infinite;
 }
 
 @keyframes homeTitleBeam{
-  0%   { background-position: -140% 0; }
-  100% { background-position:  140% 0; }
+  /* sweep for the first 57.142% (4s of a 7s cycle) */
+  0%        { background-position: -140% 0; }
+  57.142%   { background-position:  140% 0; }
+
+  /* hold for the remaining 42.858% (3s pause) */
+  100%      { background-position:  140% 0; }
 }
 
 /* Optional: stop sheen when not on home screen (since you hide the title anyway) */
