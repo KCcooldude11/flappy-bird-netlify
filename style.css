@@ -437,7 +437,7 @@ kbd {
   font-size: clamp(28px, 5.5vw, 56px);
   letter-spacing: 0.08em;
 
-  background: linear-gradient(to bottom, #ffff2f 0%, #ffbf00de 45%, #ffff2f  100%);
+  background: linear-gradient(to bottom, #ffff2f 0%, #ffbf00cc 45%, #ffff2f  100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
