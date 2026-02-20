@@ -413,6 +413,7 @@ kbd {
 /* Big gold title on the home screen only */
 /* Title card */
 #homeTitle{
+  font-weight: 400;
   position: fixed;
   top: max(16px, env(safe-area-inset-top));
   left: 50%;
@@ -433,6 +434,7 @@ kbd {
 
 /* simplified gold gradient text + shadow */
 #homeTitle .titleText{
+  font-weight: 400;
   display: inline-block;
   font-size: clamp(64px, 10vw, 140px);
   letter-spacing: 0.08em;
