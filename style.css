@@ -66,6 +66,14 @@ body {
   color: #111;
 }
 
+body {
+  min-height: 100vh;      /* fallback */
+  min-height: 100svh;     /* stable viewport on iOS 16+ */
+  min-height: 100dvh;     /* dynamic viewport on newer browsers */
+  overflow: hidden;       /* prevent the extra bottom scroll strip */
+  background: linear-gradient(#6e1d24, #9c4558);
+}
+
 /* Use WitcherKnight for all UI text */
 body, #overlay, #gameover, #score, #best, button, .btn {
   font-family: 'WitcherKnight', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
@@ -340,7 +348,9 @@ kbd {
 
 /* ---------- Small screens ---------- */
 @media (max-width: 360px) {
-  #game { width: 360px; height: 600px; }
+  /* Let the canvas fill the viewport instead of forcing 360x600 */
+  #game { width: 100vw; height: 100svh; } /* or 100dvh if you prefer */
+
   .leaderboard { width: 94vw; }
   .leaderboard .row { grid-template-columns: 26px 1fr clamp(52px, 24vw, 78px); }
 }
