@@ -421,47 +421,35 @@ kbd {
   margin: 0;
   z-index: 50;
 
+  /* keep your container styling (optional) */
+  /* background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  padding: 14px 22px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.18); */
+
   white-space: nowrap;
   pointer-events: none;
-
-  /* NEW: give it a little breathing room so it can't clip on small screens */
-  max-width: calc(100vw - 24px);
 }
 
 /* simplified gold gradient text + shadow */
 #homeTitle .titleText{
   font-weight: 400;
   display: inline-block;
+  font-size: clamp(50px, 10vw, 125px);
+  letter-spacing: 0.08em;
 
-  /* NEW: viewport-driven sizing so it fills mobile width but won't overflow */
-  font-size: clamp(44px, 16vw, 140px);
-
-  /* OPTIONAL: slightly reduce tracking on tiny screens so "Flappy Apple" fits */
-  letter-spacing: clamp(0.03em, 1.2vw, 0.08em);
-
-  background: linear-gradient(
-    to bottom,
-    #ffff2f 0%,
-    #ffbf00cc 25%,
-    #ffff2f 45%,
-    #ffbf00cc 70%,
-    #ffff2f 100%
-  );
+  background: linear-gradient(to bottom, #ffff2f 0%, #ffbf00cc 25%, #ffff2f  45%, #ffbf00cc 70%, #ffff2f  100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 
   text-shadow: none;
 
+  /* Use drop-shadow instead */
   filter:
     drop-shadow(0 2px 0 rgba(0,0,0,0.18))
     drop-shadow(0 10px 14px rgba(0,0,0,0.28));
-}
-
-/* Extra safety for iPhone SE and similarly narrow screens */
-@media (max-width: 380px){
-  #homeTitle{ max-width: calc(100vw - 16px); }
-  #homeTitle .titleText{ letter-spacing: 0.04em; }
 }
 
 /* --- Staggered medallion overlay, flat (no outline/bevel) --- */
