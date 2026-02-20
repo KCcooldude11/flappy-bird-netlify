@@ -450,7 +450,32 @@ kbd {
     drop-shadow(0 10px 14px rgba(0,0,0,0.28));
 }
 
+/* --- Pattern overlay on top of the red gradient --- */
+body{
+  position: relative; /* needed for the pseudo element stacking */
+}
 
+/* The overlay layer */
+body::before{
+  content:"";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;                /* sits behind your UI */
+  opacity: 1;                /* overall strength, tweak */
+  background-repeat: repeat;
+  background-size: 84px 84px; /* spacing of the pattern, tweak */
+  background-position: 10px 6px; /* nudge alignment, tweak */
+
+  /* A repeating inline SVG "medallion" */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3C!-- diamond fill --%3E%3Cpath d='M42 12 L58 42 L42 72 L26 42 Z' fill='rgba(230,230,230,0.18)'/%3E%3C!-- inner bevel (subtle) --%3E%3Cpath d='M42 18 L54 42 L42 66 L30 42 Z' fill='rgba(255,255,255,0.10)'/%3E%3C!-- transparent cut line (uses mask by drawing with low opacity) --%3E%3Crect x='30' y='40' width='24' height='4' fill='rgba(0,0,0,0)'/%3E%3C!-- optional: a shadowy notch line for depth --%3E%3Crect x='31' y='41' width='22' height='2' fill='rgba(0,0,0,0.10)'/%3E%3C/svg%3E");
+}
+
+/* Make sure your game/UI layers sit above the overlay */
+#app{
+  position: relative;
+  z-index: 1;
+}
 
 .your-rank{
   flex: 0 0 auto;
