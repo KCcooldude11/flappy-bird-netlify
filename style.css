@@ -59,19 +59,15 @@ html, body { height: 100%; margin: 0; }
 
 /* ---------- Page ---------- */
 body {
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
-  background: linear-gradient(#6e1d24, #9c4558);
-  display: grid;
-  place-items: center;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Arial, sans-serif;
   color: #111;
-}
 
-body {
-  min-height: 100vh;      /* fallback */
-  min-height: 100svh;     /* stable viewport on iOS 16+ */
-  min-height: 100dvh;     /* dynamic viewport on newer browsers */
-  overflow: hidden;       /* prevent the extra bottom scroll strip */
+  /* iPhone-safe full height */
+  margin: 0;
+  min-height: 100svh; /* stable viewport on iOS */
   background: linear-gradient(#6e1d24, #9c4558);
+
+  overflow: hidden;
 }
 
 /* Use WitcherKnight for all UI text */
@@ -81,11 +77,15 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 }
 
 /* ---------- App / Canvas ---------- */
-#app { position: relative; }
-
-#game {
+#app{
+  position: relative;
   width: 100vw;
-  height: 100vh;
+  height: 100svh;
+}
+
+#game{
+  width: 100%;
+  height: 100%;
   display: block;
   touch-action: manipulation;
   -ms-touch-action: none;
