@@ -552,6 +552,10 @@ body:not([data-state="ready"]) #homeTitle .titleText::after{
   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cpath d='M42 12 L58 42 L42 72 L26 42 Z' fill='rgba(235,235,235,0.16)'/%3E%3Crect x='30' y='40' width='24' height='4' rx='1.5' fill='rgba(110,29,36,0.35)'/%3E%3C/svg%3E");
 }
 
+/* Hide the medallion pattern except on the home (ready) screen */
+#app::before { display: none; }
+body[data-state="ready"] #app::before { display: block; }
+
 .your-rank{
   flex: 0 0 auto;
   margin-top: 10px;
