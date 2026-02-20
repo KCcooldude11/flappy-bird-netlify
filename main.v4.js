@@ -423,21 +423,26 @@ function getBgForTheme(t) {
   }
 
   
-function ensureDeviceId(){
-    let id = localStorage.getItem('deviceId');
-    if (!id){ id = crypto.randomUUID(); localStorage.setItem('deviceId', id); }
-    return id;
-  }
+  function ensureDeviceId(){
+      let id = localStorage.getItem('deviceId');
+      if (!id){ id = crypto.randomUUID(); localStorage.setItem('deviceId', id); }
+      return id;
+    }
   async function registerIdentityIfNeeded(){
-    let name = getSavedName();
-    if (!isValidName(name)) return { deviceId, name: '' };
+    const id = ensureDeviceId();
+    const name = getSavedName();
+
+    if (!isValidName(name)) return { deviceId: id, name: '' };
+
     try {
       await fetch('/.netlify/functions/register-identity', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ deviceId, name })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId: id, name })
       });
     } catch {}
-    return { deviceId, name };
+
+    return { deviceId: id, name };
   }
   registerIdentityIfNeeded();
   const DEVICE_ID = ensureDeviceId();
