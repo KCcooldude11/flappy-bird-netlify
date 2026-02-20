@@ -489,7 +489,7 @@ kbd {
     drop-shadow(0 0 18px rgba(255,230,120,0.18));
 
   pointer-events: none;
-  animation: homeTitleBeam 4s linear infinite;
+  animation: homeTitleBeam 10s linear infinite;
 }
 
 @keyframes homeTitleBeam{
