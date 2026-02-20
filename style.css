@@ -440,7 +440,7 @@ kbd {
   /* fallback if gradient clip fails */
   color: #FBBD03;
 
-  background: linear-gradient(to bottom, #FBF62D 0%, #FBBD03 45%, #BD8A17 100%);
+  background: linear-gradient(to bottom, #ffff2f 0%, #ffbe00 45%, #ffff2f  100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
