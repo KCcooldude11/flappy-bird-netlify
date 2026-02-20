@@ -434,7 +434,7 @@ kbd {
 /* simplified gold gradient text + shadow */
 #homeTitle .titleText{
   display: inline-block;
-  font-size: clamp(40px, 7vw, 84px);
+  font-size: clamp(64px, 10vw, 140px);
   letter-spacing: 0.08em;
 
   background: linear-gradient(to bottom, #ffff2f 0%, #ffbf00cc 25%, #ffff2f  45%, #ffbf00cc 70%, #ffff2f  100%);
