@@ -1,12 +1,6 @@
 /* ---------- Reset & helpers ---------- */
 * { box-sizing: border-box; }
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  overflow: hidden;         /* stop any page scroll */
-  overscroll-behavior: none;/* stop bounce on supported browsers */
-}
+html, body { height: 100%; margin: 0; }
 
 .show { display: flex !important; }
 .hide { display: none !important; }
@@ -84,24 +78,17 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 
 /* ---------- App / Canvas ---------- */
 #app{
-  position: fixed;
-  inset: 0;
+  position: relative;
   width: 100vw;
   height: 100svh;
-  background: linear-gradient(#6e1d24, #9c4558);
-}
-
-/* iOS safe-area bottom padding makes sure we cover that area too */
-@supports (padding: max(0px)) {
-  #app{
-    padding-bottom: env(safe-area-inset-bottom);
-  }
 }
 
 #game{
   width: 100%;
-  height: calc(100% + env(safe-area-inset-bottom));
+  height: 100%;
   display: block;
+  touch-action: manipulation;
+  -ms-touch-action: none;
 }
 
 /* ---------- HUD ---------- */
