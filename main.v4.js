@@ -560,6 +560,13 @@ function getBgForTheme(t) {
   // ===== Theme 2: relaxed water particles (from Sorodyn's CodePen) =====
 // source: "Relaxed Water Particles" by Sorodyn (CodePen qEdvzaE)
 
+function fetchWithTimeout(url, options = {}, ms = 2000) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { ...options, signal: ctrl.signal })
+    .finally(() => clearTimeout(id));
+}
+
 
   const nameInput = document.getElementById('username');
   function getSavedName() { return (localStorage.getItem('playerName') || '').trim(); }
@@ -567,13 +574,13 @@ function getBgForTheme(t) {
   function currentSkinScale(){ return skinScale(currentSkinIndex); }
   async function saveName(name) {
     localStorage.setItem('playerName', name);
-    try {
-      await fetch('/.netlify/functions/register-identity', {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify({ deviceId: ensureDeviceId(), name })
-      });
-    } catch {}
+
+    // fire-and-forget, never block gameplay
+    fetchWithTimeout('/.netlify/functions/register-identity', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ deviceId: ensureDeviceId(), name })
+    }, 1500).catch(() => {});
   }
   const skinReady = i => !!(SKINS[i] && SKINS[i].idleReady && SKINS[i].flapReady);
 
@@ -780,11 +787,11 @@ function getBgForTheme(t) {
     }
   });
   canvas.addEventListener('pointerdown', (e) => { e.preventDefault(); if (state === 'playing') flap(); });
-  btnPlay?.addEventListener('click', async (e) => {
+  btnPlay?.addEventListener('click', (e) => {
     e.preventDefault();
     const name = (nameInput?.value || '').trim();
     if (!isValidName(name)) { nameInput?.focus(); return; }
-    await saveName(name);
+    saveName(name);   // <- no await
     start();
   });
   btnTry?.addEventListener('click', (e)=>{ e.preventDefault(); start(); });
