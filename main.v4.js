@@ -429,7 +429,6 @@ function ensureDeviceId(){
     return id;
   }
   async function registerIdentityIfNeeded(){
-    const deviceId = ensureDeviceId();
     let name = getSavedName();
     if (!isValidName(name)) return { deviceId, name: '' };
     try {
@@ -500,7 +499,7 @@ function ensureDeviceId(){
   }
 
 
-  document.addEventListener('DOMContentLoaded', loadLeaderboard);
+  loadLeaderboard();
 
   function renderYourRank(info){
     const el = document.getElementById('your-rank');
@@ -612,14 +611,13 @@ function ensureDeviceId(){
 
 
 
-  const isValidName = (s) => {
+  function isValidName(s){
     if (typeof s !== 'string') return false;
     s = s.trim();
     if (s.length < 3 || s.length > 16) return false;
     if (s.toLowerCase() === 'guest') return false;
     return true;
-  };
-
+  }
   const existing = getSavedName();
   if (nameInput) nameInput.value = existing;
   if (goNameEl)  goNameEl.textContent = existing || 'Player';
@@ -714,7 +712,7 @@ function ensureDeviceId(){
     setState('gameover');
     if (score > best){ best = score; localStorage.setItem('flappy-best', String(best)); bestEl && (bestEl.textContent = 'Best: ' + best); }
     const playMs = Math.round(frameNow - runStartTime);
-    const result = await postScore(DEVICE_ID, score, playMs);
+    const result = await postScore(ensureDeviceId(), score, playMs);
     if (result?.error) console.warn('submit-score error:', result.error);
     await loadLeaderboard();
     if (goNameEl) goNameEl.textContent = getSavedName() || 'Player';
