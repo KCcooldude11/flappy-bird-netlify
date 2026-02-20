@@ -450,14 +450,7 @@ kbd {
     drop-shadow(0 10px 14px rgba(0,0,0,0.28));
 }
 
-/* --- Staggered medallion overlay (brick pattern) --- */
-body{
-  position: relative;
-  background: linear-gradient(#722330, #833445);
-}
-
-#app{ position: relative; z-index: 1; }
-
+/* --- Staggered medallion overlay, flat (no outline/bevel) --- */
 body::before{
   content:"";
   position: fixed;
@@ -465,22 +458,16 @@ body::before{
   pointer-events: none;
   z-index: 0;
 
-  /* tweak these */
-  --tile: 84px;        /* spacing */
-  --alpha: 0.16;       /* medallion opacity */
+  --tile: 84px; /* spacing */
 
   background-repeat: repeat, repeat;
   background-size: var(--tile) var(--tile), var(--tile) var(--tile);
+  background-position: 0 0, calc(var(--tile) / 2) calc(var(--tile) / 2);
 
-  /* layer 1 normal, layer 2 shifted half a tile to stagger */
-  background-position:
-    0 0,
-    calc(var(--tile) / 2) calc(var(--tile) / 2);
-
-  /* same medallion tile used twice */
+  /* same flat tile twice */
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cdefs%3E%3Cmask id='cut'%3E%3Crect width='84' height='84' fill='white'/%3E%3Crect x='30' y='40' width='24' height='4' fill='black'/%3E%3C/mask%3E%3C/defs%3E%3Cpath d='M42 12 L58 42 L42 72 L26 42 Z' fill='rgba(230,230,230,0.16)' mask='url(%23cut)'/%3E%3Cpath d='M42 18 L54 42 L42 66 L30 42 Z' fill='rgba(255,255,255,0.08)' mask='url(%23cut)'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cdefs%3E%3Cmask id='cut'%3E%3Crect width='84' height='84' fill='white'/%3E%3Crect x='30' y='40' width='24' height='4' fill='black'/%3E%3C/mask%3E%3C/defs%3E%3Cpath d='M42 12 L58 42 L42 72 L26 42 Z' fill='rgba(230,230,230,0.16)' mask='url(%23cut)'/%3E%3Cpath d='M42 18 L54 42 L42 66 L30 42 Z' fill='rgba(255,255,255,0.08)' mask='url(%23cut)'/%3E%3C/svg%3E");
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cdefs%3E%3Cmask id='cut'%3E%3Crect width='84' height='84' fill='white'/%3E%3Crect x='30' y='40' width='24' height='4' fill='black'/%3E%3C/mask%3E%3C/defs%3E%3Cpath d='M42 12 L58 42 L42 72 L26 42 Z' fill='rgba(235,235,235,0.16)' mask='url(%23cut)'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cdefs%3E%3Cmask id='cut'%3E%3Crect width='84' height='84' fill='white'/%3E%3Crect x='30' y='40' width='24' height='4' fill='black'/%3E%3C/mask%3E%3C/defs%3E%3Cpath d='M42 12 L58 42 L42 72 L26 42 Z' fill='rgba(235,235,235,0.16)' mask='url(%23cut)'/%3E%3C/svg%3E");
 }
 
 .your-rank{
