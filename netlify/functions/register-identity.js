@@ -13,8 +13,10 @@ exports.handler = async (event) => {
     const cleanName = String(name).slice(0, 16).trim();
     const { error } = await supabase
       .from('profiles')
-      .upsert({ device_id: deviceId, name: cleanName })
-      .eq('device_id', deviceId);
+      upsert(
+    { device_id: deviceId, name: cleanName },
+    { onConflict: 'device_id' }
+  );
 
     if (error) {
       return { statusCode: 500, body: JSON.stringify({ error: error.message }) };

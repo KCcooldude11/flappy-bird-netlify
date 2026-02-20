@@ -483,7 +483,8 @@ function ensureDeviceId(){
 
     // show "your ranking" only if you're NOT already on the visible leaderboard
     const yourRankEl = document.getElementById('your-rank');
-    const onBoard = Array.isArray(list) && list.some(r => r.device_id === DEVICE_ID);
+    const myId = ensureDeviceId();
+    const onBoard = Array.isArray(list) && list.some(r => r.device_id === myId);
 
     if (yourRankEl) {
       if (onBoard) {
@@ -515,7 +516,8 @@ function ensureDeviceId(){
 
   async function loadMyRank(){
     try{
-      const res = await fetch(`/.netlify/functions/get-my-rank?deviceId=${encodeURIComponent(DEVICE_ID)}`);
+      const myId = ensureDeviceId();
+      const res = await fetch(`/.netlify/functions/get-my-rank?deviceId=${encodeURIComponent(myId)}`);
       const data = await res.json();
       renderYourRank(data);
     } catch(e){
