@@ -13,7 +13,7 @@ exports.handler = async (event) => {
     const cleanName = String(name).slice(0, 16).trim();
     const { error } = await supabase
       .from('profiles')
-      upsert(
+      .upsert(
     { device_id: deviceId, name: cleanName },
     { onConflict: 'device_id' }
   );

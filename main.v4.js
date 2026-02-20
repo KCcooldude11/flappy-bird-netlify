@@ -194,14 +194,7 @@
   const HIT_INSET_X = () => Math.round(PIPE_WIDTH() * 0.14);
   const CAP_INSET_Y = () => Math.round(8 * S);
 
-  window.addEventListener('resize', () => {
-    resizeCanvas(); recomputeScale();
-    WaterParticles.onResize(W(), H());
-    bird.x = BIRD_X();
-    bird.r = Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale());
-    if (state !== 'playing') bird.y = Math.round(H()/2 - 80*S);
-    invalidateBgCache();
-  });
+
   
   function theme2Alpha() {
   if (!transition) return (theme === 2) ? 1 : 0;
@@ -421,7 +414,6 @@ function getBgForTheme(t) {
       bgCache[k].w = bgCache[k].h = bgCache[k].dpr = 0;
     }
   }
-
   
   function ensureDeviceId(){
       let id = localStorage.getItem('deviceId');
@@ -647,6 +639,15 @@ function getBgForTheme(t) {
     x:BIRD_X(), y:Math.round(H()/2 - 80*S), vy:0, rot:0, flapTimer:0,
     r: Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale())
   };
+
+  window.addEventListener('resize', () => {
+    resizeCanvas(); recomputeScale();
+    WaterParticles.onResize(W(), H());
+    bird.x = BIRD_X();
+    bird.r = Math.round(BIRD_BASE_H() * 0.20 * currentSkinScale());
+    if (state !== 'playing') bird.y = Math.round(H()/2 - 80*S);
+    invalidateBgCache();
+  });
 
   let pipes = [];
   let lastPipeAt = 0;
