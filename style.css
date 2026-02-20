@@ -457,15 +457,19 @@ kbd {
   position: absolute;
   inset: 0;
 
-  /* hard-edged diagonal "beam" */
+  /* golden diagonal beam with hard-ish edges */
   background: linear-gradient(
     120deg,
-    rgba(255,255,255,0) 0%,
-    rgba(255,255,255,0) 44%,
-    rgba(255,255,255,0.95) 49%,
-    rgba(255,255,255,0.95) 55%,
-    rgba(255,255,255,0) 60%,
-    rgba(255,255,255,0) 100%
+    rgba(255,191,0,0) 0%,
+    rgba(255,191,0,0) 44%,
+
+    /* beam core (gold) */
+    rgba(255,215,64,0.95) 49%,
+    rgba(255,245,170,0.95) 52%,
+    rgba(255,215,64,0.95) 55%,
+
+    rgba(255,191,0,0) 60%,
+    rgba(255,191,0,0) 100%
   );
 
   background-size: 260% 120%;
@@ -475,14 +479,16 @@ kbd {
   background-clip: text;
   color: transparent;
 
-  /* makes it pop without looking like a box */
-  mix-blend-mode: screen;
-  filter: drop-shadow(0 0 10px rgba(255,255,255,0.35));
+  /* make it "golden light" instead of white glare */
+  mix-blend-mode: plus-lighter; /* if unsupported, it will just render normally */
   opacity: 0.95;
 
-  pointer-events: none;
+  /* warm glow */
+  filter:
+    drop-shadow(0 0 10px rgba(255,191,0,0.35))
+    drop-shadow(0 0 18px rgba(255,230,120,0.18));
 
-  /* slow it down here */
+  pointer-events: none;
   animation: homeTitleBeam 4s linear infinite;
 }
 
