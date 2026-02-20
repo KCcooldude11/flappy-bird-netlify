@@ -532,15 +532,15 @@ body:not([data-state="ready"]) #homeTitle .titleText::after{
 /* --- Staggered medallion overlay, flat (no outline/bevel) --- */
 #app::before{
   content:"";
-  position: fixed;           /* key change: fixed, not absolute */
+  position: absolute;
   pointer-events: none;
   z-index: 1;
 
-  /* cover the full visible viewport including safe areas */
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  /* extend into safe areas */
+  top:    calc(-1 * env(safe-area-inset-top));
+  bottom: calc(-1 * env(safe-area-inset-bottom));
+  left:   0;
+  right:  0;
 
   --tile: 84px;
   background-repeat: repeat, repeat;
