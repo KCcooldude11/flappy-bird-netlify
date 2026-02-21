@@ -823,17 +823,10 @@ body[data-state="ready"] #best{
 @media (max-width: 600px){
   #overlay #homeApple{
     width: 150px;
-    transform: translate(-50%, -62%);
+    transform: translate(-50%, -40%);
   }
 }
 
-/* Very small phones: slightly bigger still (optional) */
-@media (max-width: 380px){
-  #overlay #homeApple{
-    width: 165px;
-    margin: -28px auto -8px;
-  }
-}
 
 /* Bring the Username label closer and slightly upward */
 #overlay .overlay-medallion__inner .field > span{
