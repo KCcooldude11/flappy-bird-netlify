@@ -805,12 +805,6 @@ body[data-state="ready"] #best{
   filter: drop-shadow(0 6px 10px rgba(0,0,0,0.22));
 }
 
-/* Pull the apple + label upward without moving the input down */
-#overlay #homeApple{
-  margin: -18px auto -4px;          /* up, and tighten spacing below */
-  width: clamp(44px, 8vw, 84px);    /* slightly smaller so it fits nicely */
-}
-
 /* Bring the Username label closer and slightly upward */
 #overlay .overlay-medallion__inner .field > span{
   margin-top: -2px;
