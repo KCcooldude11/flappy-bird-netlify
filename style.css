@@ -236,18 +236,28 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 #overlay p.small { font-size: 13px; opacity: .8; }
 
 /* ----- Medallion-shaped login card ----- */
-/* ----- Medallion-shaped login card (no rounded inner panel) ----- */
+/* ----- Medallion login, same proportions as background medallions ----- */
 #overlay .overlay-card.overlay-medallion{
-  /* MEDALLION SIZE */
-  --mw: min(42vw, 240px);  /* half width */
-  --mh: min(30vw, 170px);  /* half height (bigger = more vertical) */
+  /* half-width of diamond */
+  --mw: clamp(170px, 26vw, 260px);
+
+  /* half-height derived from the background medallion aspect:
+     background diamond is ~60 tall by 32 wide => 60/32 = 1.875 */
+  --mh: calc(var(--mw) * 1.875);
 
   position: relative;
+  width: calc(var(--mw) * 2);
+  height: calc(var(--mh) * 2);
+
   background: none;
   box-shadow: none;
   border: 0;
   padding: 0;
   pointer-events: auto;
+
+  filter:
+    drop-shadow(0 12px 18px rgba(0,0,0,.22))
+    drop-shadow(0 2px 0 rgba(0,0,0,.12));
 }
 
 /* Top + bottom triangles = diamond */
@@ -274,36 +284,27 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   border-top: var(--mh) solid #f3c24f;
 }
 
-/* Optional: subtle depth on the medallion itself */
-#overlay .overlay-card.overlay-medallion{
-  filter:
-    drop-shadow(0 10px 18px rgba(0,0,0,.22))
-    drop-shadow(0 2px 0 rgba(0,0,0,.12));
-}
-
-/* Content sits on top of the medallion */
+/* Content: center it inside the diamond */
 #overlay .overlay-medallion__inner{
-  position: relative;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -52%); /* tiny upward nudge feels better */
   z-index: 1;
 
-  /* Center the content inside the diamond area */
-  width: min(78vw, 360px);
-  margin: 0 auto;
-  padding: 22px 18px 18px;
-
+  width: min(74vw, 340px);
   display: flex;
   flex-direction: column;
   gap: 12px;
   align-items: center;
   text-align: center;
 
-  /* IMPORTANT: remove any rounded panel look */
   background: transparent;
-  border-radius: 0;
-  box-shadow: none;
+  border: 0;
+  padding: 0;
 }
 
-/* Label styling (so it reads on gold) */
+/* Label styling */
 #overlay .overlay-medallion__inner .field > span{
   display: inline-block;
   font-weight: 600;
@@ -312,17 +313,17 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   text-shadow: 0 1px 0 rgba(255,255,255,.35);
 }
 
-/* Softer input (less stark than pure white) */
+/* Softer input */
 #overlay .overlay-medallion__inner .field input{
-  width: min(78vw, 300px);
-  background: rgba(250, 245, 232, 0.92); /* warm off-white */
+  width: min(74vw, 300px);
+  background: rgba(250, 245, 232, 0.92);
   border: 1px solid rgba(55, 30, 10, 0.20);
   box-shadow: 0 2px 8px rgba(0,0,0,.10);
 }
 
-/* Softer play button (less stark than #111) */
+/* Softer play button */
 #overlay #btn-play{
-  background: rgba(35, 20, 10, 0.88); /* warm dark */
+  background: rgba(35, 20, 10, 0.88);
   color: rgba(255,255,255,0.92);
   box-shadow: 0 10px 18px rgba(0,0,0,.18);
 }
