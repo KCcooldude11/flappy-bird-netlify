@@ -638,7 +638,7 @@ const flyby = (() => {
   vy = (Math.random() * 140) - 70;        // gentler initial vertical velocity
 
   // flap timing (slower than before)
-  flapPeriod = 150 + (Math.random() * 110); // ms
+  flapPeriod = 260 + (Math.random() * 220); // ms 
   flapTimer = 0;
   useFlap = true;
   setSprite(); // ensure correct sprite at the start of each pass
