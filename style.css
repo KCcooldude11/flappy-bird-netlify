@@ -717,3 +717,14 @@ body[data-state="ready"] #score,
 body[data-state="ready"] #best{
   display: none !important;
 }
+
+/* Center the text the user types */
+#username{
+  text-align: center;
+}
+
+/* Center the placeholder text too */
+#username::placeholder{
+  text-align: center;
+  opacity: .7; /* optional */
+}
