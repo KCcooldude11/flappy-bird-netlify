@@ -272,16 +272,36 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   border-left:  var(--mw) solid transparent;
   border-right: var(--mw) solid transparent;
   z-index: 0;
+  border-top-color: transparent;
+  border-bottom-color: transparent;
 }
 
 /* Gold fill */
 #overlay .overlay-card.overlay-medallion::before{
   top: 0;
-  border-bottom: var(--mh) solid #f3c24f;
+  border-bottom: var(--mh) solid transparent;
 }
 #overlay .overlay-card.overlay-medallion::after{
   top: var(--mh);
-  border-top: var(--mh) solid #f3c24f;
+  border-top: var(--mh) solid transparent;
+}
+
+#overlay .overlay-card.overlay-medallion .overlay-medallion__fill{
+  position:absolute;
+  inset: 0;
+  z-index: 0;
+
+  background: linear-gradient(
+    to bottom,
+    #ffff2f 0%,
+    #ffbf00cc 25%,
+    #ffff2f 45%,
+    #ffbf00cc 70%,
+    #ffff2f 100%
+  );
+
+  /* clip to a diamond */
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
 }
 
 /* Content: center it inside the diamond */
