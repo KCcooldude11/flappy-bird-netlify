@@ -805,6 +805,34 @@ body[data-state="ready"] #best{
   filter: drop-shadow(0 6px 10px rgba(0,0,0,0.22));
 }
 
+/* Apple icon sizing: smaller on web, bigger on mobile */
+#overlay #homeApple{
+  display: block;
+  margin: -24px auto -6px;
+  width: 120px;     /* web/desktop default (smaller) */
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.22));
+}
+
+/* Mobile: make it bigger */
+@media (max-width: 600px){
+  #overlay #homeApple{
+    width: 150px;
+    margin: -26px auto -6px; /* optional: keeps input from shifting down */
+  }
+}
+
+/* Very small phones: slightly bigger still (optional) */
+@media (max-width: 380px){
+  #overlay #homeApple{
+    width: 165px;
+    margin: -28px auto -8px;
+  }
+}
+
 /* Bring the Username label closer and slightly upward */
 #overlay .overlay-medallion__inner .field > span{
   margin-top: -2px;
