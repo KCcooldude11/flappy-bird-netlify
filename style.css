@@ -727,7 +727,7 @@ body:not([data-state="ready"]) #homeTitle .titleText::after{
   pointer-events: none;
 
   z-index: -2;
-  background: linear-gradient(#6e1d24, #9c4558);
+  background: linear-gradient(#3D4973, #577DB5);
 }
 
 /* Hide the medallion pattern except on the home (ready) screen */
