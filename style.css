@@ -812,7 +812,7 @@ body[data-state="ready"] #best{
 #overlay #homeApple{
   display: block;
   margin: -24px auto -6px;
-  width: 150px;     /* web/desktop default (smaller) */
+  width: 180px;     /* web/desktop default (smaller) */
   height: auto;
   user-select: none;
   -webkit-user-drag: none;
