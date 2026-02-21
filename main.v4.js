@@ -598,9 +598,9 @@ function startHomeAppleLoop(){
   };
 
   const scheduleSwaps = () => {
-    apple.src = REG;
-    flyTimer = setTimeout(() => { apple.src = FLY; }, TO_FLY_AT);
+    apple.src = FLY; // start in fly
     regTimer = setTimeout(() => { apple.src = REG; }, TO_REG_AT);
+    flyTimer = setTimeout(() => { apple.src = FLY; }, TO_FLY_AT);
   };
 
   // Start immediately
