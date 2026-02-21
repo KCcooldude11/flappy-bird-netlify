@@ -337,8 +337,7 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 
 /* Softer play button */
 #overlay #btn-play{
-  background: rgba(35, 20, 10, 0.88);
-  color: rgba(255,255,255,0.92);
+  background: #6e1d24;
   box-shadow: 0 10px 18px rgba(0,0,0,.18);
 }
 #overlay #btn-play:disabled{
