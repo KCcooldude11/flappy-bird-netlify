@@ -818,12 +818,13 @@ body[data-state="ready"] #best{
   -webkit-user-drag: none;
   pointer-events: none;
   filter: drop-shadow(0 6px 10px rgba(0,0,0,0.22));
+  transform: translate(-50%, -40%);
 }
 
 @media (max-width: 600px){
   #overlay #homeApple{
     width: 150px;
-    transform: translate(-50%, -40%);
+    transform: translate(-50%, -30%);
   }
 }
 
