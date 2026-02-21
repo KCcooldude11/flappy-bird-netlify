@@ -791,3 +791,15 @@ body[data-state="ready"] #best{
   text-align: center;
   opacity: .7; /* optional */
 }
+
+/* Apple icon on the yellow home medallion */
+#homeApple{
+  display: block;
+  margin: 0 auto 10px;          /* centers it, adds space below */
+  width: clamp(52px, 9vw, 96px);
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;          /* so it doesn't interfere with clicks/taps */
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.22));
+}
