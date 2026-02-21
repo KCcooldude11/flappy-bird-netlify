@@ -271,12 +271,11 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 /* Gold fill */
 #overlay .overlay-card.overlay-medallion::before{
   top: 0;
-  top: calc(var(--mh) - 1px);                         /* -1px */
-  border-top: calc(var(--mh) + 1px) solid #f3c24f;
+  border-bottom: calc(var(--mh) + 1px) solid #f3c24f;
 }
 #overlay .overlay-card.overlay-medallion::after{
-  top: var(--mh);
-  border-top: var(--mh) solid #f3c24f;
+  top: calc(var(--mh) - 1px);                         /* -1px */
+  border-top: calc(var(--mh) + 1px) solid #f3c24f; 
 }
 
 /* Content: center it inside the diamond */
