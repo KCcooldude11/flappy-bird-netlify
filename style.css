@@ -248,7 +248,6 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   position: relative;
   width: calc(var(--mw) * 2);
   height: calc(var(--mh) * 2);
-  isolation: isolate; 
 
   background: none;
   box-shadow: none;
@@ -273,64 +272,21 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   border-left:  var(--mw) solid transparent;
   border-right: var(--mw) solid transparent;
   z-index: 0;
-  border-top-color: transparent;
-  border-bottom-color: transparent;
 }
 
 /* Gold fill */
 #overlay .overlay-card.overlay-medallion::before{
   top: 0;
-  border-bottom: var(--mh) solid transparent;
+  border-bottom: var(--mh) solid #f3c24f;
 }
 #overlay .overlay-card.overlay-medallion::after{
   top: var(--mh);
-  border-top: var(--mh) solid transparent;
-}
-
-#overlay .overlay-medallion__fill{
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-
-  /* This should match your diamond shape.
-     If you're using triangle borders instead, delete clip-path. */
-  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-
-  /* Inner highlights like your SCSS $hl */
-  box-shadow:
-    inset 0  1px 2px rgba(255,255,255,0.50),
-    inset 0 -1px 2px rgba(0,0,0,0.45),
-    inset 0  0 0 2px rgba(238,220,0,0.55);
-
-  /* Metallic “sparkle” ring feel comes from conic-gradient */
-  background:
-    /* bottom shadow “puddle” like your SCSS $sh */
-    radial-gradient(rgba(120,120,120,0.55), rgba(120,120,120,0) 70%)
-      50% 100% / 80% 14% no-repeat,
-    /* bright base */
-    linear-gradient(#f6d600, #f6d600),
-    /* the gold metal */
-    conic-gradient(
-      #edc800, #e3b600, #f3cf00, #ffe800,
-      #ffe900, #ffeb00, #ffe000, #ebc500,
-      #e0b100, #f1cc00, #fcdc00, #ffe500,
-      #fad900, #eec200, #e7b900, #f7d300,
-      #ffe800, #ffe300, #f5d100, #e6b900,
-      #e3b600, #f4d000, #ffe400, #ebc600,
-      #e3b600, #f6d500, #ffe900, #ffe90a,
-      #edc800
-    );
-
-  /* Helps gradients look less banded on big shapes */
-  filter:
-    drop-shadow(0 10px 16px rgba(0,0,0,0.20))
-    drop-shadow(0 2px 0 rgba(0,0,0,0.12));
+  border-top: var(--mh) solid #f3c24f;
 }
 
 /* Content: center it inside the diamond */
 #overlay .overlay-medallion__inner{
-  position: relative;
+  position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -52%); /* tiny upward nudge feels better */
