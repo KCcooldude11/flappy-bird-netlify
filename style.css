@@ -323,6 +323,8 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   letter-spacing: .06em;
   color: rgba(40, 24, 10, 0.85);
   text-shadow: 0 1px 0 rgba(255,255,255,.35);
+  text-align: center;
+  width: 100%;
 }
 
 /* Softer input */
