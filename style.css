@@ -796,8 +796,8 @@ body[data-state="ready"] #best{
 /* Apple icon on the yellow home medallion */
 #homeApple{
   display: block;
-  margin: 0 auto 10px;          /* centers it, adds space below */
-  width: clamp(70px, 12vw, 130px); /* bigger */
+  margin: -24px auto -6px;
+  width: clamp(82px, 14vw, 150px);/* bigger */
   height: auto;
   user-select: none;
   -webkit-user-drag: none;
