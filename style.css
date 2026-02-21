@@ -812,19 +812,19 @@ body[data-state="ready"] #best{
 #overlay #homeApple{
   display: block;
   margin: -24px auto -6px;
-  width: 120px;     /* web/desktop default (smaller) */
+  width: 150px;     /* web/desktop default (smaller) */
   height: auto;
   user-select: none;
   -webkit-user-drag: none;
   pointer-events: none;
   filter: drop-shadow(0 6px 10px rgba(0,0,0,0.22));
-  transform: translate(-50%, -10%);
+  transform: translate(-50%, 10%);
 }
 
 @media (max-width: 600px){
   #overlay #homeApple{
-    width: 150px;
-    transform: translate(-50%, -10%);
+    width: 180px;
+    transform: translate(-50%, 10%);
   }
 }
 
