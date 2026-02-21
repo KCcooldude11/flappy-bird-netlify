@@ -791,3 +791,18 @@ body[data-state="ready"] #best{
   text-align: center;
   opacity: .7; /* optional */
 }
+
+#home-flyby{
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 96px;          /* you can tweak */
+  height: auto;
+  z-index: 40;          /* below title z=50, above canvas */
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  transform: translate3d(-9999px, -9999px, 0);
+  image-rendering: auto; /* or pixelated if you prefer */
+  display: none;         /* JS will show only on home */
+}

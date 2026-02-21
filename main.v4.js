@@ -557,6 +557,172 @@ function getBgForTheme(t) {
 
   let merrikhUnlockedThisRun = false;
 
+  // ===== Home flyby animation (only on home screen) =====
+const flyby = (() => {
+  const el = document.getElementById('home-flyby');
+  if (!el) return { start(){}, stop(){}, tick(){} };
+
+  let running = false;
+  let raf = 0;
+
+  // current run params
+  let dir = 1;               // 1 = left->right, -1 = right->left
+  let x = -200;
+  let y = 200;
+  let vy = 0;
+  let g = 900;               // "gravity" for bobbing
+  let bobMin = 0;
+  let bobMax = 0;
+
+  let flapTimer = 0;
+  let flapPeriod = 120;      // ms between sprite swaps
+  let useFlap = true;
+
+  let speed = 180;           // px/s
+  let skinIndex = 0;
+
+  function pickSkinIndex(){
+    // pick a random skin that is ready, avoid Merrikh if it is locked in your logic
+    const candidates = [];
+    for (let i = 0; i < SKINS.length; i++){
+      // reuse your existing readiness flags
+      if (SKINS[i] && SKINS[i].idleReady && SKINS[i].flapReady){
+        // if you want to block Merrikh always on home:
+        if (SKINS[i].name === 'Merrikh') continue;
+        candidates.push(i);
+      }
+    }
+    if (!candidates.length) return 0;
+    return candidates[(Math.random() * candidates.length) | 0];
+  }
+
+  function startNewPass(){
+    skinIndex = pickSkinIndex();
+
+    // direction
+    dir = (Math.random() < 0.5) ? 1 : -1;
+
+    // start X offscreen
+    const w = window.innerWidth;
+    x = dir === 1 ? -160 : (w + 160);
+
+    // pick a random height band (avoid very top HUD area)
+    const h = window.innerHeight;
+    const topPad = 90;   // keep below title a bit
+    const botPad = 120;  // keep above bottom
+    const bandCount = 4;
+    const band = (Math.random() * bandCount) | 0;
+    const bandH = (h - topPad - botPad) / bandCount;
+
+    const baseY = topPad + band * bandH + bandH * (0.25 + Math.random() * 0.5);
+    y = baseY;
+
+    // bobbing limits around that band
+    const bobAmp = 26 + Math.random() * 22; // px
+    bobMin = baseY - bobAmp;
+    bobMax = baseY + bobAmp;
+
+    // motion tuning
+    speed = 160 + Math.random() * 140;      // px/s
+    g = 900 + Math.random() * 600;          // px/s^2
+    vy = (Math.random() * 240) - 120;       // initial vertical velocity
+
+    flapPeriod = 95 + (Math.random() * 70); // ms
+    flapTimer = 0;
+    useFlap = true;
+
+    // size based on skin scale (reuse your skinScale helper if you want)
+    const sc = (typeof SKINS[skinIndex].scale === 'number') ? SKINS[skinIndex].scale : 1;
+    const baseSize = 92; // px
+    el.style.width = `${Math.round(baseSize * sc)}px`;
+  }
+
+  function setSprite(){
+    const s = SKINS[skinIndex];
+    if (!s) return;
+    el.src = useFlap ? s.flap : s.idle;
+  }
+
+  function applyTransform(){
+    // flip on X for right->left
+    const flip = (dir === -1) ? ' scaleX(-1)' : '';
+    el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)${flip}`;
+  }
+
+  function tick(t){
+    if (!running) return;
+
+    // stop automatically if we leave home
+    if (state !== 'ready'){
+      stop();
+      return;
+    }
+
+    // dt
+    const now = t;
+    const dt = Math.min(0.033, (tick._last ? (now - tick._last) / 1000 : 0.016));
+    tick._last = now;
+
+    // horizontal
+    x += dir * speed * dt;
+
+    // vertical "gravity bob"
+    vy += g * dt;
+    y += vy * dt;
+
+    // bounce between bobMin/bobMax
+    if (y > bobMax){
+      y = bobMax;
+      vy = -Math.abs(vy) * (0.65 + Math.random() * 0.2);
+    } else if (y < bobMin){
+      y = bobMin;
+      vy = Math.abs(vy) * (0.65 + Math.random() * 0.2);
+    }
+
+    // flap sprite swap
+    flapTimer += dt * 1000;
+    if (flapTimer >= flapPeriod){
+      flapTimer = 0;
+      useFlap = !useFlap;
+      setSprite();
+    }
+
+    applyTransform();
+
+    // if offscreen, start a new pass
+    const w = window.innerWidth;
+    if (dir === 1 && x > w + 200) startNewPass();
+    if (dir === -1 && x < -200) startNewPass();
+
+    raf = requestAnimationFrame(tick);
+  }
+
+  function start(){
+    if (running) return;
+    running = true;
+    el.style.display = 'block';
+    startNewPass();
+    setSprite();
+    tick._last = 0;
+    raf = requestAnimationFrame(tick);
+  }
+
+  function stop(){
+    running = false;
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+    el.style.display = 'none';
+    el.style.transform = 'translate3d(-9999px, -9999px, 0)';
+  }
+
+  // keep it sane on resize
+  window.addEventListener('resize', () => {
+    if (running) startNewPass();
+  });
+
+  return { start, stop };
+})();
+
   // ===== Theme 2: relaxed water particles (from Sorodyn's CodePen) =====
 // source: "Relaxed Water Particles" by Sorodyn (CodePen qEdvzaE)
 
@@ -637,9 +803,14 @@ function fetchWithTimeout(url, options = {}, ms = 2000) {
   let state = 'ready'; // ready | playing | gameover
   document.body.dataset.state = state;
 
+  flyby.start();
+
   function setState(next){
     state = next;
     document.body.dataset.state = state;
+
+    if (state === 'ready') flyby.start();
+  else flyby.stop();
   }
 
   let bird  = {
