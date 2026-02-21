@@ -15,7 +15,6 @@ html, body {
   position: absolute;
   top: 8px; left: 8px; right: 8px;
   /* display: grid;   <-- REMOVE this line */
-  display: none;        /* keep it hidden by default */
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   pointer-events: none;
@@ -332,7 +331,7 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   box-shadow: none;
 }
 /* ---------- Buttons & misc ---------- */
-button#btn-play, button#btn-try {
+button#btn-try {
   border: 0;
   background: #111;
   color: #fff;
