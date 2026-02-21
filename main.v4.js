@@ -583,8 +583,12 @@ function startHomeAppleLoop(){
   // Timing must match your CSS keyframes above
   // total: 2400ms, swap to fly near the "fall", swap back near the top
   const TOTAL = 2400;
-  const TO_FLY_AT = Math.floor(TOTAL * 0.40);  // around when the fall starts
-  const TO_REG_AT = Math.floor(TOTAL * 0.88);  // near the end, back at the top
+  
+  // bottom is at 55% (we also hold bottom until 72%, but swap happens at 55%)
+  const TO_REG_AT = Math.floor(TOTAL * 0.55);
+
+  // top is at the end of the cycle, swap back right near the end
+  const TO_FLY_AT = Math.floor(TOTAL * 0.98);
 
   let flyTimer = null;
   let regTimer = null;
@@ -598,9 +602,9 @@ function startHomeAppleLoop(){
   };
 
   const scheduleSwaps = () => {
-    apple.src = FLY; // start in fly
-    regTimer = setTimeout(() => { apple.src = REG; }, TO_REG_AT);
-    flyTimer = setTimeout(() => { apple.src = FLY; }, TO_FLY_AT);
+    apple.src = FLY; // start at top flying
+    regTimer = setTimeout(() => { apple.src = REG; }, TO_REG_AT); // bottom -> regular
+    flyTimer = setTimeout(() => { apple.src = FLY; }, TO_FLY_AT); // back at top -> fly
   };
 
   // Start immediately
