@@ -193,19 +193,22 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   justify-content: center;
 }
 
-/* Overlay card stacks vertically */
+/* Overlay: center it, but don't style the card as a white box */
 #overlay.show { display: flex; }
-#overlay { pointer-events: none; text-align: center; }
-#overlay .overlay-card {
-  pointer-events: auto;
-  background: rgba(255,255,255,.9);
-  padding: 16px 22px;
-  border-radius: 16px;
-  box-shadow: 0 10px 24px rgba(0,0,0,.2);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+#overlay{
+  pointer-events: none;
+  text-align: center;
   align-items: center;
+  justify-content: center;
+}
+
+/* Only make the overlay card clickable, don't give it box styling here */
+#overlay .overlay-card{
+  pointer-events: auto;
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 /* Game over panel stacks: Title -> Leaderboard -> Try Again */
@@ -221,8 +224,8 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   margin-right: auto;
 }
 
-/* Shared panel content look */
-#overlay > *, #gameover > * {
+/* Shared panel content look (GAMEOVER ONLY) */
+#gameover > *{
   background: rgba(255,255,255,.9);
   padding: 16px 22px;
   border-radius: 16px;
