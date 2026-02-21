@@ -272,7 +272,8 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   position: absolute;
   left: 50%;
   top: 50%;
-  transform: translate(-50%, -52%); /* tiny upward nudge feels better */
+  gap: 10px;
+  transform: translate(-50%, -50%);
   z-index: 1;
 
   width: min(62vw, 220px);
@@ -802,4 +803,21 @@ body[data-state="ready"] #best{
   -webkit-user-drag: none;
   pointer-events: none;          /* so it doesn't interfere with clicks/taps */
   filter: drop-shadow(0 6px 10px rgba(0,0,0,0.22));
+}
+
+/* Pull the apple + label upward without moving the input down */
+#overlay #homeApple{
+  margin: -18px auto -4px;          /* up, and tighten spacing below */
+  width: clamp(44px, 8vw, 84px);    /* slightly smaller so it fits nicely */
+}
+
+/* Bring the Username label closer and slightly upward */
+#overlay .overlay-medallion__inner .field > span{
+  margin-top: -2px;
+  margin-bottom: -2px;
+}
+
+/* Keep input centered and consistent */
+#overlay .overlay-medallion__inner .field{
+  gap: 6px;
 }
