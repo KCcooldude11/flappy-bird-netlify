@@ -331,12 +331,37 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 
 /* Softer play button */
 #overlay #btn-play{
+  -webkit-appearance: none;
+  appearance: none;
+  border: 0;                 /* kills the white outline */
+  outline: none;
   background: #6e1d24;
+  color: #f7f1e3;            /* force text color (no blue) */
+  text-decoration: none;
+  -webkit-text-fill-color: #f7f1e3; /* extra iOS insurance */
+  
+  border-radius: 999px;
+  padding: 10px 18px;
+  line-height: 1;
+  cursor: pointer;
+
   box-shadow: 0 10px 18px rgba(0,0,0,.18);
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
 }
+
+/* same look on focus */
+#overlay #btn-play:focus,
+#overlay #btn-play:focus-visible{
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(255,191,0,0.35),
+    0 10px 18px rgba(0,0,0,.18);
+}
+
 #overlay #btn-play:disabled{
   opacity: .55;
   box-shadow: none;
+  cursor: not-allowed;
 }
 
 #overlay .field input#username{
