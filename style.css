@@ -229,53 +229,42 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 #overlay p  { margin: 6px 0; }
 #overlay p.small { font-size: 13px; opacity: .8; }
 
-/* ----- Medallion-shaped login card ----- */
-/* ----- Medallion login, same proportions as background medallions ----- */
-#overlay .overlay-card.overlay-medallion{
-  /* half-width of diamond */
-  --mw: clamp(125px, 15vw, 200px);
+/* THE medallion fill layer (single painted surface) */
 
-  /* half-height derived from the background medallion aspect:
-     background diamond is ~60 tall by 32 wide => 60/32 = 1.875 */
+#overlay .overlay-card.overlay-medallion{
+  --mw: clamp(125px, 15vw, 200px);
   --mh: calc(var(--mw) * 1.875);
 
   position: relative;
   width: calc(var(--mw) * 2);
   height: calc(var(--mh) * 2);
 
-  background: none;
-  box-shadow: none;
-  border: 0;
-  padding: 0;
   pointer-events: auto;
-
-  filter:
-    drop-shadow(0 12px 18px rgba(0,0,0,.22))
-    drop-shadow(0 2px 0 rgba(0,0,0,.12));
 }
 
-/* Top + bottom triangles = diamond */
-#overlay .overlay-card.overlay-medallion::before,
-#overlay .overlay-card.overlay-medallion::after{
-  content:"";
-  position:absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left:  var(--mw) solid transparent;
-  border-right: var(--mw) solid transparent;
+#overlay .overlay-medallion__fill{
+  position: absolute;
+  inset: 0;
   z-index: 0;
+
+  -webkit-clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+
+  background: #f3c24f; /* start simple, you can swap to gradient later */
 }
 
-/* Gold fill */
-#overlay .overlay-card.overlay-medallion::before{
-  top: 0;
-  border-bottom: calc(var(--mh) + 1px) solid #f3c24f;
-}
-#overlay .overlay-card.overlay-medallion::after{
-  top: calc(var(--mh) - 1px);                         /* -1px */
-  border-top: calc(var(--mh) + 1px) solid #f3c24f; 
+/* Shadow without filter, also clipped to the diamond */
+#overlay .overlay-medallion__fill::before{
+  content:"";
+  position: absolute;
+  inset: 0;
+
+  -webkit-clip-path: inherit;
+  clip-path: inherit;
+
+  box-shadow:
+    0 12px 18px rgba(0,0,0,.22),
+    0 2px 0 rgba(0,0,0,.12);
 }
 
 /* Content: center it inside the diamond */
