@@ -315,7 +315,7 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 
 /* Softer input */
 #overlay .overlay-medallion__inner .field input{
-  width: min(74vw, 300px);
+  width: min(62vw, 220px);
   background: rgba(250, 245, 232, 0.92);
   border: 1px solid rgba(55, 30, 10, 0.20);
   box-shadow: 0 2px 8px rgba(0,0,0,.10);
