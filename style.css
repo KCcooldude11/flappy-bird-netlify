@@ -4,6 +4,7 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
+  background: linear-gradient(#6e1d24, #9c4558);
   overflow: hidden;         /* stop any page scroll */
   overscroll-behavior: none;/* stop bounce on supported browsers */
 }
@@ -87,14 +88,21 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   width: 100vw;
 
   /* use dynamic viewport when supported */
-  height: 100dvh;
-  height: 100svh; /* fallback */
+  height: 100svh;   /* fallback */
+  height: 100dvh;   /* modern browsers */
+  
+  background: linear-gradient(#6e1d24, #9c4558);
   overflow: hidden;
 }
 
 #game{
-  width: 100%;
-  height: 100%;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100svh;   /* fallback */
+  height: 100dvh;   /* key line for iOS */
+  
   display: block;
 }
 /* ---------- HUD ---------- */
