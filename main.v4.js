@@ -29,6 +29,8 @@
   const renameInput= document.getElementById('rename-input');
   const renameSave = document.getElementById('rename-save');
 
+  startHomeAppleLoop();
+
   const BG_FOCUS = {
     1: { desktop: { cx: 0.50, cy: 0.50 }, mobile: { cx: 0.50, cy: 0.50 } },
     // Theme 2: aim a little more to the right to feature the waterfall on mobile
@@ -565,6 +567,54 @@ function fetchWithTimeout(url, options = {}, ms = 2000) {
   const id = setTimeout(() => ctrl.abort(), ms);
   return fetch(url, { ...options, signal: ctrl.signal })
     .finally(() => clearTimeout(id));
+}
+
+function startHomeAppleLoop(){
+  const apple = document.getElementById("homeApple");
+  if (!apple) return;
+
+  const REG = "./assets/apple_regular.png";
+  const FLY = "./assets/apple_fly.png";
+
+  // Preload so swaps are instant
+  const img1 = new Image(); img1.src = REG;
+  const img2 = new Image(); img2.src = FLY;
+
+  // Timing must match your CSS keyframes above
+  // total: 2400ms, swap to fly near the "fall", swap back near the top
+  const TOTAL = 2400;
+  const TO_FLY_AT = Math.floor(TOTAL * 0.40);  // around when the fall starts
+  const TO_REG_AT = Math.floor(TOTAL * 0.88);  // near the end, back at the top
+
+  let flyTimer = null;
+  let regTimer = null;
+  let loopTimer = null;
+
+  const clearTimers = () => {
+    if (flyTimer) clearTimeout(flyTimer);
+    if (regTimer) clearTimeout(regTimer);
+    if (loopTimer) clearInterval(loopTimer);
+    flyTimer = regTimer = loopTimer = null;
+  };
+
+  const scheduleSwaps = () => {
+    apple.src = REG;
+    flyTimer = setTimeout(() => { apple.src = FLY; }, TO_FLY_AT);
+    regTimer = setTimeout(() => { apple.src = REG; }, TO_REG_AT);
+  };
+
+  // Start immediately
+  clearTimers();
+  scheduleSwaps();
+  loopTimer = setInterval(scheduleSwaps, TOTAL);
+
+  // Stop swaps if overlay hides (optional safety)
+  const obs = new MutationObserver(() => {
+    const showing = document.getElementById("overlay")?.classList.contains("show");
+    if (!showing) clearTimers();
+  });
+  const overlay = document.getElementById("overlay");
+  if (overlay) obs.observe(overlay, { attributes: true, attributeFilter: ["class"] });
 }
 
 
