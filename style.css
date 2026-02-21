@@ -239,7 +239,7 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 /* ----- Medallion login, same proportions as background medallions ----- */
 #overlay .overlay-card.overlay-medallion{
   /* half-width of diamond */
-  --mw: clamp(75px, 9vw, 110px);
+  --mw: clamp(125px, 15vw, 200px);
 
   /* half-height derived from the background medallion aspect:
      background diamond is ~60 tall by 32 wide => 60/32 = 1.875 */
@@ -301,7 +301,7 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 
   background: transparent;
   border: 0;
-  padding: 0;
+  padding: 0; 
 }
 
 /* Label styling */
