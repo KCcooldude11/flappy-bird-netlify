@@ -514,8 +514,6 @@ kbd {
 /* ---------- Small screens ---------- */
 @media (max-width: 360px) {
   /* Let the canvas fill the viewport instead of forcing 360x600 */
-  #game { width: 100vw; height: 100svh; } /* or 100dvh if you prefer */
-
   .leaderboard { width: 94vw; }
   .leaderboard .row { grid-template-columns: 26px 1fr clamp(52px, 24vw, 78px); }
 }
@@ -681,42 +679,40 @@ body:not([data-state="ready"]) #homeTitle .titleText::after{
   animation: none;
 }
 
+/* Medallion pattern layer, extend into safe areas */
+#app::before{
+  content:"";
+  position: fixed;
+  left: 0; right: 0;
+  top: calc(-1 * env(safe-area-inset-top));
+  bottom: calc(-1 * env(safe-area-inset-bottom));
+  pointer-events: none;
+
+  z-index: -1;
+
+  --tile: 84px;
+  background-repeat: repeat, repeat;
+  background-size: var(--tile) var(--tile), var(--tile) var(--tile);
+  background-position:
+    calc(50% - (var(--tile) / 2)) calc(50% - (var(--tile) / 2)),
+    calc(50% - (var(--tile) / 2) + (var(--tile) / 2)) calc(50% - (var(--tile) / 2) + (var(--tile) / 2));
+
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cpath d='M42 12 L58 42 L42 72 L26 42 Z' fill='rgba(235,235,235,0.16)'/%3E%3Crect x='30' y='40' width='24' height='4' rx='1.5' fill='rgba(110,29,36,0.35)'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cpath d='M42 12 L58 42 L42 72 L26 42 Z' fill='rgba(235,235,235,0.16)'/%3E%3Crect x='30' y='40' width='24' height='4' rx='1.5' fill='rgba(110,29,36,0.35)'/%3E%3C/svg%3E");
+}
+
+/* Gradient layer behind the pattern */
 #app::after{
   content:"";
   position: fixed;
   left: 0; right: 0;
   top: calc(-1 * env(safe-area-inset-top));
   bottom: calc(-1 * env(safe-area-inset-bottom));
+  pointer-events: none;
+
   z-index: -2;
-  pointer-events: none;
-
   background: linear-gradient(#6e1d24, #9c4558);
-}
-
-
-/* --- Staggered medallion overlay, flat (no outline/bevel) --- */
-#app::before{
-  content:"";
-  position: absolute;
-  pointer-events: none;
-  z-index: 1;
-
-  /* extend into safe areas */
-  top:    calc(-1 * env(safe-area-inset-top));
-  bottom: calc(-1 * env(safe-area-inset-bottom));
-  left:   0;
-  right:  0;
-
-  --tile: 84px;
-  background-repeat: repeat, repeat;
-  background-size: var(--tile) var(--tile), var(--tile) var(--tile);
-   background-position:
-    calc(50% - (var(--tile) / 2)) calc(50% - (var(--tile) / 2)),
-    calc(50% - (var(--tile) / 2) + (var(--tile) / 2)) calc(50% - (var(--tile) / 2) + (var(--tile) / 2));
-
-  background-image:
-  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cpath d='M42 12 L58 42 L42 72 L26 42 Z' fill='rgba(235,235,235,0.16)'/%3E%3Crect x='30' y='40' width='24' height='4' rx='1.5' fill='rgba(110,29,36,0.35)'/%3E%3C/svg%3E"),
-  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cpath d='M42 12 L58 42 L42 72 L26 42 Z' fill='rgba(235,235,235,0.16)'/%3E%3Crect x='30' y='40' width='24' height='4' rx='1.5' fill='rgba(110,29,36,0.35)'/%3E%3C/svg%3E");
 }
 
 /* Hide the medallion pattern except on the home (ready) screen */
