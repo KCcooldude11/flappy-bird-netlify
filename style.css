@@ -304,6 +304,18 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   padding: 0; 
 }
 
+/* Center the whole Username block inside the medallion */
+#overlay .overlay-medallion__inner .field{
+  align-items: center;   /* centers children horizontally */
+  width: 100%;
+}
+
+/* Force the input itself to be centered */
+#overlay .overlay-medallion__inner .field input{
+  display: block;
+  margin: 0 auto;
+}
+
 /* Label styling */
 #overlay .overlay-medallion__inner .field > span{
   display: inline-block;
