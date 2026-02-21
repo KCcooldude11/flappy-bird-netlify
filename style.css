@@ -70,7 +70,6 @@ body {
   /* iPhone-safe full height */
   margin: 0;
   min-height: 100svh; /* stable viewport on iOS */
-  background: linear-gradient(#6e1d24, #9c4558);
 
   overflow: hidden;
 }
@@ -86,23 +85,18 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   position: fixed;
   inset: 0;
   width: 100vw;
-  height: 100svh;
-  background: linear-gradient(#6e1d24, #9c4558);
-}
 
-/* iOS safe-area bottom padding makes sure we cover that area too */
-@supports (padding: max(0px)) {
-  #app{
-    padding-bottom: env(safe-area-inset-bottom);
-  }
+  /* use dynamic viewport when supported */
+  height: 100dvh;
+  height: 100svh; /* fallback */
+  overflow: hidden;
 }
 
 #game{
   width: 100%;
-  height: calc(100% + env(safe-area-inset-bottom));
+  height: 100%;
   display: block;
 }
-
 /* ---------- HUD ---------- */
 #hud {
   position: absolute;
@@ -686,6 +680,19 @@ kbd {
 body:not([data-state="ready"]) #homeTitle .titleText::after{
   animation: none;
 }
+
+#app::after{
+  content:"";
+  position: fixed;
+  left: 0; right: 0;
+  top: calc(-1 * env(safe-area-inset-top));
+  bottom: calc(-1 * env(safe-area-inset-bottom));
+  z-index: -2;
+  pointer-events: none;
+
+  background: linear-gradient(#6e1d24, #9c4558);
+}
+
 
 /* --- Staggered medallion overlay, flat (no outline/bevel) --- */
 #app::before{
