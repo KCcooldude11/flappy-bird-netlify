@@ -558,6 +558,15 @@ function getBgForTheme(t) {
   let merrikhUnlockedThisRun = false;
 
   // ===== Home flyby animation (only on home screen) =====
+
+const flybyState = {
+  baseY: 200,
+  bobAmp: 24,
+  bobOmega: 2 * Math.PI,
+  bobPhase: 0,
+  drift: 0
+};
+
 const flyby = (() => {
   const el = document.getElementById('home-flyby');
   if (!el) return { start(){}, stop(){}, tick(){} };
@@ -597,45 +606,52 @@ const flyby = (() => {
   }
 
   function startNewPass(){
-    skinIndex = pickSkinIndex();
+  skinIndex = pickSkinIndex();
 
-    // direction
-    dir = (Math.random() < 0.5) ? 1 : -1;
+  // direction
+  dir = (Math.random() < 0.5) ? 1 : -1;
 
-    // start X offscreen
-    const w = window.innerWidth;
-    x = dir === 1 ? -160 : (w + 160);
+  // start X offscreen
+  const w = window.innerWidth;
+  x = dir === 1 ? -180 : (w + 180);
 
-    // pick a random height band (avoid very top HUD area)
-    const h = window.innerHeight;
-    const topPad = 90;   // keep below title a bit
-    const botPad = 120;  // keep above bottom
-    const bandCount = 4;
-    const band = (Math.random() * bandCount) | 0;
-    const bandH = (h - topPad - botPad) / bandCount;
+  // pick a random height band (avoid very top HUD/title and bottom safe area)
+  const h = window.innerHeight;
+  const topPad = 110;
+  const botPad = 140;
 
-    const baseY = topPad + band * bandH + bandH * (0.25 + Math.random() * 0.5);
-    y = baseY;
+  const bandCount = 5; // more variety than 4
+  const band = (Math.random() * bandCount) | 0;
+  const bandH = (h - topPad - botPad) / bandCount;
 
-    // bobbing limits around that band
-    const bobAmp = 26 + Math.random() * 22; // px
-    bobMin = baseY - bobAmp;
-    bobMax = baseY + bobAmp;
+  const baseY = topPad + band * bandH + bandH * (0.22 + Math.random() * 0.56);
+  y = baseY;
 
-    // motion tuning
-    speed = 160 + Math.random() * 140;      // px/s
-    g = 900 + Math.random() * 600;          // px/s^2
-    vy = (Math.random() * 240) - 120;       // initial vertical velocity
+  // bobbing limits around that band
+  const bobAmp = 24 + Math.random() * 30; // px
+  bobMin = baseY - bobAmp;
+  bobMax = baseY + bobAmp;
 
-    flapPeriod = 95 + (Math.random() * 70); // ms
-    flapTimer = 0;
-    useFlap = true;
+  // motion tuning
+  speed = 120 + Math.random() * 140;      // px/s (slower so it feels floaty)
+  g = 520 + Math.random() * 380;          // px/s^2 (lower = bobbing lasts)
+  vy = (Math.random() * 140) - 70;        // gentler initial vertical velocity
 
-    // size based on skin scale (reuse your skinScale helper if you want)
-    const sc = (typeof SKINS[skinIndex].scale === 'number') ? SKINS[skinIndex].scale : 1;
-    const baseSize = 92; // px
-    el.style.width = `${Math.round(baseSize * sc)}px`;
-  }
+  // flap timing (slower than before)
+  flapPeriod = 150 + (Math.random() * 110); // ms
+  flapTimer = 0;
+  useFlap = true;
+  setSprite(); // ensure correct sprite at the start of each pass
+
+  // size based on skin scale
+  const sc = (typeof SKINS[skinIndex].scale === 'number') ? SKINS[skinIndex].scale : 1;
+  const baseSize = 92; // px
+  el.style.width = `${Math.round(baseSize * sc)}px`;
+
+  // flip if traveling right-to-left
+  // (applyTransform should read `dir` and handle scaleX(-1) if you want)
+  applyTransform();
+}
 
   function setSprite(){
     const s = SKINS[skinIndex];
@@ -650,52 +666,52 @@ const flyby = (() => {
   }
 
   function tick(t){
-    if (!running) return;
+  if (!running) return;
 
-    // stop automatically if we leave home
-    if (state !== 'ready'){
-      stop();
-      return;
-    }
-
-    // dt
-    const now = t;
-    const dt = Math.min(0.033, (tick._last ? (now - tick._last) / 1000 : 0.016));
-    tick._last = now;
-
-    // horizontal
-    x += dir * speed * dt;
-
-    // vertical "gravity bob"
-    vy += g * dt;
-    y += vy * dt;
-
-    // bounce between bobMin/bobMax
-    if (y > bobMax){
-      y = bobMax;
-      vy = -Math.abs(vy) * (0.65 + Math.random() * 0.2);
-    } else if (y < bobMin){
-      y = bobMin;
-      vy = Math.abs(vy) * (0.65 + Math.random() * 0.2);
-    }
-
-    // flap sprite swap
-    flapTimer += dt * 1000;
-    if (flapTimer >= flapPeriod){
-      flapTimer = 0;
-      useFlap = !useFlap;
-      setSprite();
-    }
-
-    applyTransform();
-
-    // if offscreen, start a new pass
-    const w = window.innerWidth;
-    if (dir === 1 && x > w + 200) startNewPass();
-    if (dir === -1 && x < -200) startNewPass();
-
-    raf = requestAnimationFrame(tick);
+  // Only run on home screen. This is the safety line that ensures gameplay isn't affected.
+  if (state !== 'ready'){
+    stop();
+    return;
   }
+
+  // dt
+  const now = t;
+  const dt = Math.min(0.033, (tick._last ? (now - tick._last) / 1000 : 0.016));
+  tick._last = now;
+
+  // horizontal
+  x += dir * speed * dt;
+
+  // vertical "gravity bob"
+  vy += g * dt;
+  y += vy * dt;
+
+  // bounce between bobMin/bobMax (keep it moving, but not "sticking")
+  if (y > bobMax){
+    y = bobMax;
+    vy = -Math.max(120, Math.abs(vy) * (0.70 + Math.random() * 0.12));
+  } else if (y < bobMin){
+    y = bobMin;
+    vy =  Math.max(120, Math.abs(vy) * (0.70 + Math.random() * 0.12));
+  }
+
+  // flap sprite swap (slower, and stays consistent)
+  flapTimer += dt * 1000;
+  if (flapTimer >= flapPeriod){
+    flapTimer -= flapPeriod; // keep remainder so timing stays smooth
+    useFlap = !useFlap;
+    setSprite();
+  }
+
+  applyTransform();
+
+  // if offscreen, start a new pass
+  const w = window.innerWidth;
+  if (dir === 1 && x > w + 220) startNewPass();
+  if (dir === -1 && x < -220) startNewPass();
+
+  raf = requestAnimationFrame(tick);
+}
 
   function start(){
     if (running) return;
