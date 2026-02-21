@@ -816,13 +816,15 @@ body[data-state="ready"] #best{
 
 /* Fall a bit, then rise back */
 @keyframes homeAppleBob{
-  0%   { transform: translate(-50%, -40%); }  /* top */
-  18%  { transform: translate(-50%, -40%); }  /* hold at top */
+  /* top hold */
+  0%   { transform: translate(-50%, -40%); }
+  18%  { transform: translate(-50%, -40%); }
 
-  55%  { transform: translate(-50%, -16%); }  /* bottom */
-  72%  { transform: translate(-50%, -16%); }  /* hold at bottom */
+  /* fall to bottom (no hold) */
+  55%  { transform: translate(-50%, -16%); }
 
-  100% { transform: translate(-50%, -40%); }  /* back to top */
+  /* rise back to top */
+  100% { transform: translate(-50%, -40%); }
 }
 
 /* Respect reduced motion */
