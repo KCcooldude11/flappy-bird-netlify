@@ -794,15 +794,18 @@ body[data-state="ready"] #best{
 }
 
 /* Apple icon on the yellow home medallion */
-#homeApple{
-  display: block;
-  margin: -24px auto -6px;
-  width: clamp(82px, 14vw, 150px);/* bigger */
+#overlay #homeApple{
+  position: absolute;
+  left: 50%;
+  top: 0;                          /* anchor at top of medallion box */
+  transform: translate(-50%, -58%);/* pull it upward so it overlaps the tip */
+  width: 120px;                    /* desktop default */
   height: auto;
+  z-index: 2;                      /* above the fill and inner */
+  pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
-  pointer-events: none;          /* so it doesn't interfere with clicks/taps */
-  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.22));
+  filter: drop-shadow(0 10px 16px rgba(0,0,0,0.22));
 }
 
 /* Apple icon sizing: smaller on web, bigger on mobile */
@@ -817,11 +820,10 @@ body[data-state="ready"] #best{
   filter: drop-shadow(0 6px 10px rgba(0,0,0,0.22));
 }
 
-/* Mobile: make it bigger */
 @media (max-width: 600px){
   #overlay #homeApple{
     width: 150px;
-    margin: -26px auto -6px; /* optional: keeps input from shifting down */
+    transform: translate(-50%, -62%);
   }
 }
 
