@@ -345,6 +345,53 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   opacity: .55;
   box-shadow: none;
 }
+
+#overlay .field input#username{
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;                 /* remove default focus ring */
+  border-radius: 12px;
+
+  /* your normal state */
+  background: rgba(250, 245, 232, 0.92);
+  border: 1px solid rgba(55, 30, 10, 0.22);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+
+  /* keep text centered (if you want) */
+  text-align: center;
+
+  /* makes the cursor match the palette */
+  caret-color: #c98512;
+}
+
+/* Keyboard focus (desktop) */
+#overlay .field input#username:focus-visible{
+  border-color: rgba(201, 133, 18, 0.95); /* amber */
+  box-shadow:
+    0 0 0 3px rgba(255, 191, 0, 0.35),    /* outer glow */
+    0 0 0 1px rgba(55, 30, 10, 0.55) inset,
+    0 6px 14px rgba(0,0,0,0.18);
+}
+
+/* Tap focus (mobile + fallback) */
+#overlay .field input#username:focus{
+  border-color: rgba(201, 133, 18, 0.95);
+  box-shadow:
+    0 0 0 3px rgba(255, 191, 0, 0.35),
+    0 0 0 1px rgba(55, 30, 10, 0.55) inset,
+    0 6px 14px rgba(0,0,0,0.18);
+}
+
+/* Optional: selection highlight color */
+#overlay .field input#username::selection{
+  background: rgba(255, 191, 0, 0.35);
+}
+
+/* iOS Safari sometimes adds inner shadow/blue tint: this helps neutralize it */
+#overlay .field input#username{
+  -webkit-tap-highlight-color: rgba(255,191,0,0.25);
+}
+
 /* ---------- Buttons & misc ---------- */
 button#btn-try {
   border: 0;
