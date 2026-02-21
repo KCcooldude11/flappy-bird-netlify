@@ -286,56 +286,22 @@ body, #overlay, #gameover, #score, #best, button, .btn {
   border-top: var(--mh) solid transparent;
 }
 
-/* The actual medallion fill layer */
-.overlay-medallion__fill{
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-
-  /* if you are using clip-path for the diamond */
-  /* clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); */
-
-  /* Metal base + shading + highlight */
-  background:
-    /* subtle top highlight */
-    radial-gradient(120% 70% at 50% 18%,
-      rgba(255,255,255,0.55) 0%,
-      rgba(255,255,255,0.18) 26%,
-      rgba(255,255,255,0) 60%),
-    /* subtle bottom shade */
-    radial-gradient(120% 70% at 50% 88%,
-      rgba(0,0,0,0.22) 0%,
-      rgba(0,0,0,0.10) 28%,
-      rgba(0,0,0,0) 62%),
-    /* your gold, but toned down (less neon) */
-    linear-gradient(to bottom,
-      #fff07a 0%,
-      rgba(255,191,0,0.92) 25%,
-      #ffe86a 45%,
-      rgba(255,191,0,0.92) 70%,
-      #fff07a 100%);
-
-  /* definition */
-  box-shadow:
-    0 18px 30px rgba(0,0,0,0.22),
-    0 3px 0 rgba(0,0,0,0.10);
-
-  /* crisp edge (acts like a stroke) */
-  outline: 1px solid rgba(90, 50, 10, 0.35);
-  outline-offset: -1px;
-}
-
-/* optional: tiny noise to kill gradient banding (very subtle) */
-.overlay-medallion__fill::after{
-  content:"";
+#overlay .overlay-card.overlay-medallion .overlay-medallion__fill{
   position:absolute;
-  inset:0;
-  pointer-events:none;
-  opacity: 0.10;
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
-  background-size: 120px 120px;
-  mix-blend-mode: soft-light;
+  inset: 0;
+  z-index: 0;
+
+  background: linear-gradient(
+    to bottom,
+    #ffff2f 0%,
+    #ffbf00cc 25%,
+    #ffff2f 45%,
+    #ffbf00cc 70%,
+    #ffff2f 100%
+  );
+
+  /* clip to a diamond */
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
 }
 
 /* Content: center it inside the diamond */
