@@ -797,7 +797,7 @@ body[data-state="ready"] #best{
 #homeApple{
   display: block;
   margin: 0 auto 10px;          /* centers it, adds space below */
-  width: clamp(52px, 9vw, 96px);
+  width: clamp(70px, 12vw, 130px); /* bigger */
   height: auto;
   user-select: none;
   -webkit-user-drag: none;
