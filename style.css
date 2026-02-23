@@ -894,9 +894,14 @@ body[data-state="ready"] #best{
 
 /* Let gameover content start at top, not vertically centered */
 #gameover.show{
-  justify-content: flex-start;          /* overrides justify-content:center from base */
-  padding-top: 12px;
-  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* overrides the base justify-content:center */
+  align-items: center;
+  height: 100%;
+  gap: 12px;
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+  pointer-events: none;
 }
 
 /* Make room so pinned button does not overlap content */
@@ -906,17 +911,20 @@ body[data-state="ready"] #best{
 
 /* The middle area (leaderboard) can shrink and will scroll its rows */
 #gameover.show .leaderboard{
-  max-height: none;                    /* remove 55vh cap */
   flex: 1 1 auto;
-  min-height: 0;
-  margin-bottom: var(--tryH);          /* reserve space for the pinned button */
+  min-height: 0;        /* critical: allows inner scroller to actually scroll */
+  max-height: none;     /* override your 55vh cap */
+  overflow: hidden;     /* container itself does NOT scroll */
+  display: flex;        /* ensure rows can flex */
+  flex-direction: column;
 }
 
 /* Keep header visible, scroll only the rows */
 #gameover.show #leaderboard-rows{
-  overflow: auto;
   flex: 1 1 auto;
   min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch; /* iOS momentum scroll */
 }
 
 /* Pin the <p> that contains Try Again */
@@ -943,4 +951,20 @@ body[data-state="ready"] #best{
   min-width: 200px;
   padding: 12px 22px;
   font-size: 18px;
+}
+
+#gameover.show #your-rank{
+  flex: 0 0 auto;
+}
+
+/* 5) Keep Try Again visible and compact */
+#gameover.show > p{
+  flex: 0 0 auto;
+  margin: 0 auto;
+
+  /* undo the big card styling your #gameover > * applies */
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+  border-radius: 0;
 }
