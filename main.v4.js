@@ -1064,6 +1064,12 @@ function startHomeAppleLoop(){
       WaterParticles.draw(theme2Alpha());
       ctx.restore();
     }
+
+      if (state === 'ready'){
+        overlay?.classList.add('show');
+        overlay?.classList.remove('hide');
+        return;
+      }
     // Spires
     for (let p of pipes){
       drawSpireSegmented(p.x, 0, PIPE_WIDTH(), p.topH, 'down');
