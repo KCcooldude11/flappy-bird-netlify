@@ -832,7 +832,7 @@ body[data-state="ready"] #best{
   55%  { transform: translate(-50%, 34%); }
 
   /* rise back to top */
-  100% { transform: translate(-50%, -10%); }
+  100% { transform: translate(-50%, 10%); }
 }
 
 /* Respect reduced motion */
