@@ -208,39 +208,8 @@ body, #overlay, #gameover, #score, #best, button, .btn {
 #gameover.show {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  height: 100%;
-  padding: 12px 0 max(12px, env(safe-area-inset-bottom));
-  pointer-events: none;
-}
-
-/* Top card: natural size */
-#gameover.show .go-card{
-  flex: 0 0 auto;
-}
-
-/* Middle: leaderboard becomes the scroll area */
-#gameover.show .leaderboard{
-  flex: 1 1 auto;
-  min-height: 0;           /* critical for flex scroll containers */
-  width: min(94vw, 380px);
-  max-height: none;        /* override your 55vh cap */
-  overflow: auto;          /* scroll when needed */
-}
-
-/* Bottom: pin the button row */
-#gameover.show > p{
-  flex: 0 0 auto;
-  margin: 0 auto;
-}
-
-If you want t
-
-/* children still clickable */
-#gameover.show > *{
-  pointer-events: auto;
-  margin-left: auto;
-  margin-right: auto;
+  gap: 16px;
+  pointer-events: none;       /* container doesn’t eat clicks */
 }
 #gameover > * {
   pointer-events: auto;
@@ -902,25 +871,4 @@ body[data-state="ready"] #best{
 /* Keep input centered and consistent */
 #overlay .overlay-medallion__inner .field{
   gap: 6px;
-}
-
-/* --- Game Over layout fix: top aligned, button always visible --- */
-#gameover.show{
-  display: flex;
-  flex-direction: column;
-
-  /* override the base #gameover justify-content:center */
-  justify-content: flex-start;
-  align-items: center;
-
-  height: 100%;
-  gap: 12px;
-  padding: 12px 0 max(12px, env(safe-area-inset-bottom));
-  pointer-events: none;
-}
-
-#gameover.show > *{
-  pointer-events: auto;
-  margin-left: auto;
-  margin-right: auto;
 }
