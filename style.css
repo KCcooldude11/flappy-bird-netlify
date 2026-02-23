@@ -891,3 +891,56 @@ body[data-state="ready"] #best{
 #overlay .overlay-medallion__inner .field{
   gap: 6px;
 }
+
+/* Let gameover content start at top, not vertically centered */
+#gameover.show{
+  justify-content: flex-start;          /* overrides justify-content:center from base */
+  padding-top: 12px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
+
+/* Make room so pinned button does not overlap content */
+#gameover.show{
+  --tryH: 62px; /* reserved height for the pinned button row */
+}
+
+/* The middle area (leaderboard) can shrink and will scroll its rows */
+#gameover.show .leaderboard{
+  max-height: none;                    /* remove 55vh cap */
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: var(--tryH);          /* reserve space for the pinned button */
+}
+
+/* Keep header visible, scroll only the rows */
+#gameover.show #leaderboard-rows{
+  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Pin the <p> that contains Try Again */
+#gameover.show > p{
+  position: fixed;
+  left: 50%;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 9999;
+
+  margin: 0;
+  padding: 0;
+
+  /* Undo your global "#gameover > *" card styling for this row */
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+
+  pointer-events: auto;
+}
+
+/* Optional: make sure the button is easy to tap on iPhone */
+#btn-try{
+  min-width: 200px;
+  padding: 12px 22px;
+  font-size: 18px;
+}
