@@ -903,3 +903,24 @@ body[data-state="ready"] #best{
 #overlay .overlay-medallion__inner .field{
   gap: 6px;
 }
+
+/* --- Game Over layout fix: top aligned, button always visible --- */
+#gameover.show{
+  display: flex;
+  flex-direction: column;
+
+  /* override the base #gameover justify-content:center */
+  justify-content: flex-start;
+  align-items: center;
+
+  height: 100%;
+  gap: 12px;
+  padding: 12px 0 max(12px, env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+
+#gameover.show > *{
+  pointer-events: auto;
+  margin-left: auto;
+  margin-right: auto;
+}
