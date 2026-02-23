@@ -24,15 +24,34 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   background: rgba(255,255,255,.9);
-  padding: 16px 22px;
+  padding: 10px 14px;
   border-radius: 16px;
   box-shadow: 0 10px 24px rgba(0,0,0,.2);
 }
 
 #gameover .go-card h2 { 
+  font-size: 28px;     /* adjust as you like */
+  line-height: 1;
   margin: 0;
+}
+
+/* Username line smaller + tighter */
+#gameover .profile-line{
+  margin-top: 2px;     /* was 6px */
+  gap: 6px;            /* was 8px */
+  font-size: 16px;     /* was 18px */
+}
+
+/* Edit icon button slightly smaller */
+#gameover .icon-btn{
+  width: 24px;
+  height: 24px;
+}
+#gameover .icon-btn svg{
+  width: 16px;
+  height: 16px;
 }
 
 /* Character image size inside the card */
@@ -40,7 +59,7 @@ html, body {
   display: block;
   width: auto;
   height: auto;
-  max-width: 100%;   /* only shrink if the card is narrower */
+  max-width: 90%;   /* only shrink if the card is narrower */
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
